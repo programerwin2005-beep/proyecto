@@ -57,7 +57,7 @@ class Inscripcion extends Model
     public static function getMiembrosDisponibles(int $cursoId)
     {
         return Miembro::where('estado', 'Activo')
-            ->whereDoesntHave('inscripciones', fn ($q) => $q->where('curso_id', $cursoId))
+            ->whereDoesntHave('inscripciones', fn ($q) => $q->withTrashed()->where('curso_id', $cursoId))
             ->orderBy('nombre')
             ->get();
     }

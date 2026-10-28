@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             'Administrador' => 'Administrador con acceso total al sistema.',
             'Secretario' => 'Gestiona personas y módulos operativos del sistema.',
             'Tesorero' => 'Gestiona cultos y las finanzas (ingresos, egresos, contratos).',
+            'Docente' => 'Registra la asistencia de los cursos que tiene asignados.',
         ];
 
         $adminRole = null;

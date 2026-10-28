@@ -66,4 +66,16 @@ class Curso extends Model
     {
         return $this->hasMany(Sesion::class, 'id_curso');
     }
+
+    /**
+     * Cursos del docente: los asignados en docente_curso o los que tienen
+     * alguna sesión asignada directamente al docente.
+     */
+    public function scopeParaDocente($query, int $docenteId)
+    {
+        return $query->where(function ($sub) use ($docenteId) {
+            $sub->whereHas('docentes', fn ($q) => $q->where('docentes.id', $docenteId))
+                ->orWhereHas('sesiones', fn ($q) => $q->where('id_docente', $docenteId));
+        });
+    }
 }

@@ -82,13 +82,6 @@ class ContratoController extends Controller
         return redirect()->route('contratos.index')->with('success', 'Contrato eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $contrato = Contrato::withTrashed()->findOrFail($id);
-        $contrato->restore();
-
-        return redirect()->route('contratos.index')->with('success', 'Contrato restaurado con éxito.');
-    }
 
     public function renovar($id)
     {

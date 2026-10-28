@@ -60,11 +60,4 @@ class LiderIglesiaController extends Controller
         return redirect()->route('lideres.index')->with('success', 'Líder eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $lider = LiderIglesia::withTrashed()->findOrFail($id);
-        $lider->restore();
-
-        return redirect()->route('lideres.index')->with('success', 'Líder restaurado con éxito.');
-    }
 }

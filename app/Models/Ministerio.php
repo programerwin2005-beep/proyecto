@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ministerio extends Model
@@ -17,23 +17,21 @@ class Ministerio extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
-        'liderable_id',
-        'liderable_type',
+        'id_lider_iglesia',
     ];
 
     /**
-     * Relación polimórfica para el líder del ministerio.
-     * Puede ser Miembro o LiderIglesia.
+     * Líder de iglesia responsable del ministerio.
      */
-    public function liderable(): MorphTo
+    public function lider(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->belongsTo(LiderIglesia::class, 'id_lider_iglesia');
     }
 
     public function miembros(): BelongsToMany
     {
         return $this->belongsToMany(Miembro::class, 'miembro_ministerio')
-            ->withPivot(['cargo_id', 'fecha_inicio', 'fecha_fin'])
+            ->withPivot(['fecha_inicio', 'fecha_fin'])
             ->withTimestamps();
     }
 

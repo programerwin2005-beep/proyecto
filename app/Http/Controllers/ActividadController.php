@@ -60,11 +60,4 @@ class ActividadController extends Controller
         return redirect()->route('actividades.index')->with('success', 'Actividad eliminada lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $actividad = Actividad::withTrashed()->findOrFail($id);
-        $actividad->restore();
-
-        return redirect()->route('actividades.index')->with('success', 'Actividad restaurada con éxito.');
-    }
 }

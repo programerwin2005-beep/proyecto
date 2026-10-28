@@ -4,21 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Docente;
 use App\Models\Miembro;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class DocenteController extends Controller
 {
     public function index()
     {
-        $docentes = Docente::with('miembro')->paginate(10);
+        $docentes = Docente::with(['miembro', 'user'])->paginate(10);
 
         return view('docentes.index', compact('docentes'));
     }
 
     public function create()
     {
-        $miembros = Miembro::doesntHave('docente')->get();
+        $miembros = Miembro::whereDoesntHave('docente', fn ($q) => $q->withTrashed())->get();
 
         return view('docentes.create', compact('miembros'));
     }
@@ -40,13 +44,12 @@ class DocenteController extends Controller
             ->where('id_miembro', $validated['id_miembro'])
             ->first();
 
-        // Un docente borrado lógicamente se reactiva en lugar de duplicarse.
         if ($docente) {
-            $docente->restore();
-            $docente->update($validated);
+            $mensaje = $docente->trashed()
+                ? 'Ya existe un docente eliminado para este miembro.'
+                : 'El miembro ya está registrado como docente.';
 
-            return redirect()->route('docentes.index')
-                ->with('success', 'Se reactivó el docente existente.');
+            return back()->with('error', $mensaje)->withInput();
         }
 
         Docente::create($validated);
@@ -56,7 +59,7 @@ class DocenteController extends Controller
 
     public function show($id)
     {
-        $docente = Docente::with(['miembro', 'cursos'])->withTrashed()->findOrFail($id);
+        $docente = Docente::with(['miembro', 'user', 'cursos'])->withTrashed()->findOrFail($id);
 
         return view('docentes.show', compact('docente'));
     }
@@ -85,19 +88,76 @@ class DocenteController extends Controller
         return redirect()->route('docentes.index')->with('success', 'Docente actualizado con éxito.');
     }
 
+    /**
+     * Formulario para crear el usuario de acceso del docente.
+     */
+    public function acceso(Docente $docente)
+    {
+        $docente->load('miembro', 'user');
+
+        if ($docente->user_id) {
+            return redirect()->route('docentes.show', $docente->id)
+                ->with('error', 'Este docente ya tiene un acceso al sistema.');
+        }
+
+        return view('docentes.acceso', compact('docente'));
+    }
+
+    /**
+     * Crea el usuario con rol Docente y lo vincula al docente.
+     */
+    public function guardarAcceso(Request $request, Docente $docente)
+    {
+        if ($docente->user_id) {
+            return redirect()->route('docentes.show', $docente->id)
+                ->with('error', 'Este docente ya tiene un acceso al sistema.');
+        }
+
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
+        ]);
+
+        DB::transaction(function () use ($validated, $docente) {
+            $user = User::create([
+                'name' => $docente->miembro->nombre,
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            $role = Role::where('nombre', 'Docente')->firstOrFail();
+            $user->roles()->attach($role->id);
+
+            $docente->update(['user_id' => $user->id]);
+        });
+
+        return redirect()->route('docentes.show', $docente->id)
+            ->with('success', 'Acceso del docente creado con éxito.');
+    }
+
     public function destroy($id)
     {
-        $docente = Docente::findOrFail($id);
-        $docente->delete();
+        $docente = Docente::with('user')->findOrFail($id);
+
+        DB::transaction(function () use ($docente) {
+            // El usuario del docente es exclusivo para la asistencia: se le
+            // retira el rol y, si no tiene otros roles, se elimina lógicamente.
+            if ($docente->user) {
+                $role = Role::where('nombre', 'Docente')->first();
+
+                if ($role) {
+                    $docente->user->roles()->detach($role->id);
+                }
+
+                if ($docente->user->roles()->count() === 0) {
+                    $docente->user->delete();
+                }
+            }
+
+            $docente->delete();
+        });
 
         return redirect()->route('docentes.index')->with('success', 'Docente eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $docente = Docente::withTrashed()->findOrFail($id);
-        $docente->restore();
-
-        return redirect()->route('docentes.index')->with('success', 'Docente restaurado con éxito.');
-    }
 }

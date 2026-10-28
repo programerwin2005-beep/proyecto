@@ -65,21 +65,4 @@ class PagoCursoController extends Controller
             ->with('success', 'Pago eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $pago = PagoCurso::withTrashed()->findOrFail($id);
-        $cursoId = $pago->inscripcion->curso_id;
-
-        DB::transaction(function () use ($pago) {
-            $pago->restore();
-
-            $ingreso = Ingreso::withTrashed()
-                ->where('pago_curso_id', $pago->id)
-                ->first();
-            $ingreso?->restore();
-        });
-
-        return redirect()->route('inscripciones.gestion', $cursoId)
-            ->with('success', 'Pago restaurado con éxito.');
-    }
 }

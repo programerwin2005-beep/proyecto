@@ -14,10 +14,16 @@ class Asistencia extends Model
 
     protected $fillable = [
         'miembro_id',
+        'user_id',
         'sesion_id',
         'estado',
         'observacion',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function sesion(): BelongsTo
     {

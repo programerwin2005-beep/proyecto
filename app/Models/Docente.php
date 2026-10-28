@@ -15,6 +15,7 @@ class Docente extends Model
 
     protected $fillable = [
         'id_miembro',
+        'user_id',
         'especialidad',
         'titulo',
         'activo',
@@ -23,6 +24,11 @@ class Docente extends Model
     public function miembro(): BelongsTo
     {
         return $this->belongsTo(Miembro::class, 'id_miembro');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function cursos(): BelongsToMany

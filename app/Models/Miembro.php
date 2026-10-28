@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Miembro extends Model
@@ -39,7 +38,7 @@ class Miembro extends Model
     public function ministerios(): BelongsToMany
     {
         return $this->belongsToMany(Ministerio::class, 'miembro_ministerio')
-            ->withPivot(['cargo_id', 'fecha_inicio', 'fecha_fin'])
+            ->withPivot(['fecha_inicio', 'fecha_fin'])
             ->withTimestamps();
     }
 
@@ -60,10 +59,5 @@ class Miembro extends Model
         return $this->belongsToMany(Sesion::class, 'asistencias_sesion')
             ->withPivot(['estado', 'observacion'])
             ->withTimestamps();
-    }
-
-    public function ministeriosLiderados(): MorphMany
-    {
-        return $this->morphMany(Ministerio::class, 'liderable');
     }
 }

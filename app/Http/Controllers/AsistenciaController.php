@@ -14,9 +14,19 @@ class AsistenciaController extends Controller
 {
     public function index(Request $request)
     {
-        $asistencias = Asistencia::with(['miembro', 'sesion.curso'])
+        $query = Asistencia::with(['miembro', 'sesion.curso'])
             ->join('sesiones', 'asistencias_sesion.sesion_id', '=', 'sesiones.id')
-            ->select('asistencias_sesion.*')
+            ->select('asistencias_sesion.*');
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            $docente && $docente->activo
+                ? $query->whereHas('sesion', fn ($q) => $q->paraDocente($docente->id))
+                : $query->whereRaw('1 = 0');
+        }
+
+        $asistencias = $query
             ->when($request->filled('q'), fn ($q) => $q->whereHas('miembro', fn ($m) => $m->where('nombre', 'like', '%'.$request->q.'%')))
             ->when($request->filled('curso_id'), fn ($q) => $q->porCurso($request->curso_id))
             ->when($request->filled('estado'), fn ($q) => $q->where('asistencias_sesion.estado', $request->estado))
@@ -26,24 +36,38 @@ class AsistenciaController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $cursos = Curso::orderBy('nombre')->get();
+        $cursos = $this->cursosVisibles();
 
         return view('asistencia.index', compact('asistencias', 'cursos'));
     }
 
     public function store(Request $request, Sesion $sesion)
     {
+        $this->autorizarSesion($sesion);
+
         $validated = $request->validate([
             'asistencia' => 'required|array',
             'asistencia.*.estado' => 'required|in:Presente,Ausente,Tardanza,Justificado',
             'asistencia.*.observacion' => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($validated, $sesion) {
+        $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
+            ->whereNull('deleted_at')
+            ->pluck('miembro_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        DB::transaction(function () use ($validated, $sesion, $inscritos) {
             foreach ($validated['asistencia'] as $miembroId => $datos) {
+                // Solo se aceptan miembros inscritos en el curso de la sesión.
+                if (! in_array((int) $miembroId, $inscritos, true)) {
+                    continue;
+                }
+
                 $valores = [
                     'estado' => $datos['estado'],
                     'observacion' => $datos['observacion'] ?? null,
+                    'user_id' => auth()->id(),
                 ];
 
                 Asistencia::updateOrCreate(
@@ -59,6 +83,8 @@ class AsistenciaController extends Controller
 
     public function marcarTodos(Sesion $sesion)
     {
+        $this->autorizarSesion($sesion);
+
         $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
             ->whereNull('deleted_at')
             ->pluck('miembro_id');
@@ -67,7 +93,7 @@ class AsistenciaController extends Controller
             foreach ($inscritos as $miembroId) {
                 Asistencia::updateOrCreate(
                     ['sesion_id' => $sesion->id, 'miembro_id' => $miembroId],
-                    ['estado' => 'Presente']
+                    ['estado' => 'Presente', 'user_id' => auth()->id()]
                 );
             }
         });
@@ -78,10 +104,24 @@ class AsistenciaController extends Controller
 
     public function registrar(Request $request)
     {
-        $cursos = Curso::whereHas('sesiones', fn ($q) => $q->whereNull('deleted_at'))
-            ->with(['sesiones' => fn ($q) => $q->whereNull('deleted_at')->orderBy('fecha')])
-            ->orderBy('nombre')
-            ->get();
+        $cursosQuery = Curso::whereHas('sesiones', fn ($q) => $q->whereNull('deleted_at'));
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            if ($docente && $docente->activo) {
+                $cursosQuery->paraDocente($docente->id)
+                    ->with(['sesiones' => fn ($q) => $q->paraDocente($docente->id)
+                        ->whereNull('deleted_at')
+                        ->orderBy('fecha')]);
+            } else {
+                $cursosQuery->whereRaw('1 = 0')->with('sesiones');
+            }
+        } else {
+            $cursosQuery->with(['sesiones' => fn ($q) => $q->whereNull('deleted_at')->orderBy('fecha')]);
+        }
+
+        $cursos = $cursosQuery->orderBy('nombre')->get();
 
         $sesion = null;
         $inscritos = collect();
@@ -92,6 +132,8 @@ class AsistenciaController extends Controller
             $sesion = Sesion::with('curso', 'docente.miembro')->find($request->sesion_id);
 
             if ($sesion) {
+                $this->autorizarSesion($sesion);
+
                 $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
                     ->whereNull('deleted_at')
                     ->with('miembro')
@@ -115,12 +157,29 @@ class AsistenciaController extends Controller
 
     public function historial(int $miembroId)
     {
-        $asistencias = Asistencia::with(['sesion.curso', 'miembro'])
+        $query = Asistencia::with(['sesion.curso', 'miembro'])
             ->join('sesiones', 'asistencias_sesion.sesion_id', '=', 'sesiones.id')
             ->select('asistencias_sesion.*')
-            ->porMiembro($miembroId)
-            ->orderByDesc('sesiones.fecha')
-            ->get();
+            ->porMiembro($miembroId);
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            $pertenece = $docente && $docente->activo && (
+                Inscripcion::where('miembro_id', $miembroId)
+                    ->whereHas('curso.docentes', fn ($q) => $q->where('docentes.id', $docente->id))
+                    ->exists()
+                || Asistencia::where('miembro_id', $miembroId)
+                    ->whereHas('sesion', fn ($q) => $q->where('id_docente', $docente->id))
+                    ->exists()
+            );
+
+            abort_unless($pertenece, 403, 'No tienes acceso al historial de este miembro.');
+
+            $query->whereHas('sesion', fn ($q) => $q->paraDocente($docente->id));
+        }
+
+        $asistencias = $query->orderByDesc('sesiones.fecha')->get();
 
         $miembro = Miembro::findOrFail($miembroId);
 
@@ -134,5 +193,42 @@ class AsistenciaController extends Controller
             ]);
 
         return view('asistencia.historial', compact('miembro', 'asistencias', 'resumenPorCurso'));
+    }
+
+    /**
+     * Cursos que puede ver el usuario autenticado.
+     */
+    private function cursosVisibles()
+    {
+        $query = Curso::query()->orderBy('nombre');
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            $docente && $docente->activo
+                ? $query->paraDocente($docente->id)
+                : $query->whereRaw('1 = 0');
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Impide que un docente registre o consulte asistencia de sesiones ajenas.
+     */
+    private function autorizarSesion(Sesion $sesion): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->esDocente()) {
+            return;
+        }
+
+        $docente = $user->docente;
+
+        $pertenece = $docente && $docente->activo
+            && Sesion::whereKey($sesion->id)->paraDocente($docente->id)->exists();
+
+        abort_unless($pertenece, 403, 'No tienes acceso a esta sesión.');
     }
 }

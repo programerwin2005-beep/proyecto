@@ -57,11 +57,4 @@ class CargoController extends Controller
         return redirect()->route('cargos.index')->with('success', 'Cargo eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $cargo = Cargo::withTrashed()->findOrFail($id);
-        $cargo->restore(); // Restauración
-
-        return redirect()->route('cargos.index')->with('success', 'Cargo restaurado con éxito.');
-    }
 }

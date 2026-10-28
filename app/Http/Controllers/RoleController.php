@@ -75,13 +75,6 @@ class RoleController extends Controller
         return redirect()->route('roles.index')->with('success', 'Rol eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $role = Role::withTrashed()->findOrFail($id);
-        $role->restore();
-
-        return redirect()->route('roles.index')->with('success', 'Rol restaurado con éxito.');
-    }
 
     // rol_usuario view: list users and roles for assignment
     public function userRoles()

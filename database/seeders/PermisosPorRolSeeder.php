@@ -18,6 +18,12 @@ class PermisosPorRolSeeder extends Seeder
             'seguimiento', 'cursos', 'docentes', 'inscripciones', 'sesiones', 'asistencia',
         ],
         'Tesorero' => ['cultos', 'ingresos', 'egresos', 'contratos'],
+        // El docente solo consulta sus sesiones y registra asistencia.
+        'Docente' => [
+            'sesiones' => ['ver'],
+            'asistencia' => ['ver', 'crear', 'buscar'],
+            'reportes.asistencia' => ['ver'],
+        ],
     ];
 
     /**
@@ -45,13 +51,11 @@ class PermisosPorRolSeeder extends Seeder
         $ahora = now();
 
         foreach ($modulos as $modulo => $accionesModulo) {
-            $permitido = $tipo === 'all'
-                || (is_array($tipo) && in_array($modulo, $tipo, true))
-                || str_starts_with($modulo, 'reportes');
+            $accionesPermitidas = $this->accionesPermitidas($tipo, $modulo, $accionesModulo);
 
             $valores = [];
             foreach (self::ACCIONES as $accion) {
-                $valores[$accion] = $permitido && in_array($accion, $accionesModulo, true);
+                $valores[$accion] = in_array($accion, $accionesPermitidas, true);
             }
 
             DB::table('permisos')->updateOrInsert(
@@ -59,6 +63,35 @@ class PermisosPorRolSeeder extends Seeder
                 $valores + ['updated_at' => $ahora, 'created_at' => $ahora]
             );
         }
+    }
+
+    /**
+     * Resuelve las acciones concedidas según el tipo de definición:
+     *  - 'all': todas las acciones de todos los módulos.
+     *  - lista de módulos: todas las acciones de esos módulos (y de reportes).
+     *  - mapa módulo => acciones: solo las acciones indicadas.
+     *
+     * @param  string|array<int, string>|array<string, array<int, string>>  $tipo
+     * @param  array<int, string>  $accionesModulo
+     * @return array<int, string>
+     */
+    private function accionesPermitidas(string|array $tipo, string $modulo, array $accionesModulo): array
+    {
+        if ($tipo === 'all') {
+            return $accionesModulo;
+        }
+
+        if ($tipo === []) {
+            return [];
+        }
+
+        if (array_is_list($tipo)) {
+            $permitido = in_array($modulo, $tipo, true) || str_starts_with($modulo, 'reportes');
+
+            return $permitido ? $accionesModulo : [];
+        }
+
+        return array_values(array_intersect($tipo[$modulo] ?? [], $accionesModulo));
     }
 
     /**

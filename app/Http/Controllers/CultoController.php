@@ -77,11 +77,4 @@ class CultoController extends Controller
         return redirect()->route('cultos.index')->with('success', 'Culto eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $culto = Culto::withTrashed()->findOrFail($id);
-        $culto->restore();
-
-        return redirect()->route('cultos.index')->with('success', 'Culto restaurado con éxito.');
-    }
 }

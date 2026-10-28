@@ -16,23 +16,14 @@ class MinisterioRequest extends FormRequest
         return [
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'liderable_id' => 'nullable|integer',
-            'liderable_type' => 'nullable|string|in:App\Models\Miembro,App\Models\LiderIglesia',
+            'id_lider_iglesia' => 'nullable|exists:lideres_iglesia,id',
         ];
     }
 
-    public function withValidator($validator)
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
-            $type = $this->input('liderable_type');
-            $id = $this->input('liderable_id');
-
-            if ($type && $id) {
-                $tabla = $type === 'App\Models\Miembro' ? 'miembros' : 'lideres_iglesia';
-                if (! \DB::table($tabla)->where('id', $id)->exists()) {
-                    $validator->errors()->add('liderable_id', 'El líder seleccionado no existe.');
-                }
-            }
-        });
+        return [
+            'id_lider_iglesia.exists' => 'El líder seleccionado no existe.',
+        ];
     }
 }

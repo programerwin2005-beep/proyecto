@@ -88,11 +88,4 @@ class IngresoController extends Controller
         return redirect()->route('ingresos.index')->with('success', 'Ingreso eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $ingreso = Ingreso::withTrashed()->findOrFail($id);
-        $ingreso->restore();
-
-        return redirect()->route('ingresos.index')->with('success', 'Ingreso restaurado con éxito.');
-    }
 }

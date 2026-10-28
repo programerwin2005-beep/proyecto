@@ -38,4 +38,17 @@ class Sesion extends Model
             ->withPivot(['estado', 'observacion'])
             ->withTimestamps();
     }
+
+    /**
+     * Limita las sesiones a las de los cursos asignados al docente.
+     * Se consideran tanto la asignación directa de la sesión como la
+     * asignación del curso en la tabla docente_curso.
+     */
+    public function scopeParaDocente($query, int $docenteId)
+    {
+        return $query->where(function ($sub) use ($docenteId) {
+            $sub->where('id_docente', $docenteId)
+                ->orWhereHas('curso.docentes', fn ($q) => $q->where('docentes.id', $docenteId));
+        });
+    }
 }

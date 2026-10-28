@@ -17,11 +17,7 @@
     </div>
 
     <div style="margin-bottom: 20px;">
-        @if($user->trashed())
-            <span class="badge badge-inactive">Eliminado</span>
-        @else
             <span class="badge badge-active">Activo</span>
-        @endif
     </div>
 
     <div style="border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden;">
@@ -60,15 +56,5 @@
         @endif
     </div>
 
-    @if($user->trashed())
-        <div style="margin-top: 25px;">
-            @if(auth()->user()->puede('usuarios', 'eliminar'))
-            <form method="POST" action="{{ route('users.restore', $user->id) }}">
-                @csrf
-                <button type="submit" class="btn btn-restore" style="width: auto; padding: 10px 20px;">Restaurar Usuario</button>
-            </form>
-            @endif
-        </div>
-    @endif
 </div>
 @endsection

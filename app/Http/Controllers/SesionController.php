@@ -15,7 +15,17 @@ class SesionController extends Controller
 {
     public function index()
     {
-        $sesiones = Sesion::with(['curso', 'docente'])->paginate(10);
+        $query = Sesion::with(['curso', 'docente']);
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            $docente && $docente->activo
+                ? $query->paraDocente($docente->id)
+                : $query->whereRaw('1 = 0');
+        }
+
+        $sesiones = $query->paginate(10);
 
         return view('sesiones.index', compact('sesiones'));
     }
@@ -55,6 +65,8 @@ class SesionController extends Controller
     public function show($id)
     {
         $sesion = Sesion::with(['curso', 'docente.miembro'])->withTrashed()->findOrFail($id);
+
+        $this->autorizarAcceso($sesion);
 
         $inscritos = Inscripcion::with('miembro')
             ->where('curso_id', $sesion->id_curso)
@@ -144,13 +156,6 @@ class SesionController extends Controller
         return redirect()->route('sesiones.index')->with('success', 'Sesión eliminada lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $sesion = Sesion::withTrashed()->findOrFail($id);
-        $sesion->restore();
-
-        return redirect()->route('sesiones.index')->with('success', 'Sesión restaurada con éxito.');
-    }
 
     public function generar(Curso $curso)
     {
@@ -177,6 +182,12 @@ class SesionController extends Controller
         $fin = Carbon::parse($curso->f_fin);
         $hora = substr((string) $curso->hora_inicio, 0, 5);
 
+        // Si el curso tiene un único docente, las sesiones generadas quedan
+        // asignadas a él; con varios docentes se asigna manualmente.
+        $docenteUnico = $curso->docentes()->count() === 1
+            ? $curso->docentes()->first()
+            : null;
+
         $diasCurso = array_map('intval', $curso->dias_semana ?? []);
 
         while ($fecha->lte($fin)) {
@@ -186,6 +197,7 @@ class SesionController extends Controller
                 if (! in_array($clave, $existentes)) {
                     Sesion::create([
                         'id_curso' => $curso->id,
+                        'id_docente' => $docenteUnico?->id,
                         'fecha' => $fecha->toDateString(),
                         'hora' => $curso->hora_inicio,
                         'tema' => 'Sesión '.($creadas + 1),
@@ -202,6 +214,25 @@ class SesionController extends Controller
 
         return redirect()->route('sesiones.index')
             ->with('success', "Se generaron {$creadas} sesiones automáticamente para el curso {$curso->nombre}.");
+    }
+
+    /**
+     * Impide que un docente consulte sesiones de cursos que no tiene asignados.
+     */
+    private function autorizarAcceso(Sesion $sesion): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->esDocente()) {
+            return;
+        }
+
+        $docente = $user->docente;
+
+        $pertenece = $docente && $docente->activo
+            && Sesion::whereKey($sesion->id)->paraDocente($docente->id)->exists();
+
+        abort_unless($pertenece, 403, 'No tienes acceso a esta sesión.');
     }
 
     private function validarRangoFechas(Curso $curso, Carbon $fecha, array &$errores): void

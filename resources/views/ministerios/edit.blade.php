@@ -33,35 +33,14 @@
         </div>
 
         <div class="form-group">
-            <label for="tipo-lider" class="form-label">Líder Asignado</label>
-            <select name="liderable_type" id="tipo-lider" class="form-control" onchange="toggleLiderSelect()">
+            <label for="id_lider_iglesia" class="form-label">Líder Asignado</label>
+            <select name="id_lider_iglesia" id="id_lider_iglesia" class="form-control">
                 <option value="">Sin líder asignado</option>
-                <option value="App\Models\Miembro" {{ old('liderable_type', $ministerio->liderable_type) == 'App\Models\Miembro' ? 'selected' : '' }}>Miembro</option>
-                <option value="App\Models\LiderIglesia" {{ old('liderable_type', $ministerio->liderable_type) == 'App\Models\LiderIglesia' ? 'selected' : '' }}>Líder de Iglesia</option>
-            </select>
-        </div>
-
-        <div class="form-group" id="group-miembros">
-            <label for="select-miembros" class="form-label">Seleccionar Miembro</label>
-            <select name="liderable_id" id="select-miembros" class="form-control">
-                <option value="">Seleccione...</option>
-                @foreach($miembros as $miembro)
-
-                    <option value="{{ $miembro->id }}" {{ old('liderable_id', $ministerio->liderable_type == 'App\Models\Miembro' ? $ministerio->liderable_id : '') == $miembro->id ? 'selected' : '' }}>{{ $miembro->nombre }}</option>
-                
-@endforeach
-            </select>
-        </div>
-
-        <div class="form-group" id="group-lideres" style="display: none;">
-            <label for="select-lideres" class="form-label">Seleccionar Líder de Iglesia</label>
-            <select name="liderable_id" id="select-lideres" class="form-control" disabled>
-                <option value="">Seleccione...</option>
                 @foreach($lideres as $lider)
-
-                    <option value="{{ $lider->id }}" {{ old('liderable_id', $ministerio->liderable_type == 'App\Models\LiderIglesia' ? $ministerio->liderable_id : '') == $lider->id ? 'selected' : '' }}>{{ $lider->nombre }}</option>
-                
-@endforeach
+                    <option value="{{ $lider->id }}" {{ old('id_lider_iglesia', $ministerio->id_lider_iglesia) == $lider->id ? 'selected' : '' }}>
+                        {{ $lider->nombre }}{{ $lider->cargo ? ' — '.$lider->cargo->nombre : '' }}
+                    </option>
+                @endforeach
             </select>
         </div>
 
@@ -71,33 +50,4 @@
         </div>
     </form>
 </div>
-
-<script>
-    function toggleLiderSelect() {
-        const type = document.getElementById('tipo-lider').value;
-        const miembrosGroup = document.getElementById('group-miembros');
-        const lideresGroup = document.getElementById('group-lideres');
-        const miembrosSelect = document.getElementById('select-miembros');
-        const lideresSelect = document.getElementById('select-lideres');
-
-        if (type === 'App\\Models\\Miembro') {
-            miembrosGroup.style.display = 'block';
-            lideresGroup.style.display = 'none';
-            miembrosSelect.disabled = false;
-            lideresSelect.disabled = true;
-        } else if (type === 'App\\Models\\LiderIglesia') {
-            miembrosGroup.style.display = 'none';
-            lideresGroup.style.display = 'block';
-            miembrosSelect.disabled = true;
-            lideresSelect.disabled = false;
-        } else {
-            miembrosGroup.style.display = 'none';
-            lideresGroup.style.display = 'none';
-            miembrosSelect.disabled = true;
-            lideresSelect.disabled = true;
-        }
-    }
-
-    toggleLiderSelect();
-</script>
 @endsection

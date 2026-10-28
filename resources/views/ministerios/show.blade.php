@@ -21,7 +21,11 @@
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Líder</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $ministerio->liderable?->nombre ?? 'Sin asignar' }}</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $ministerio->lider?->nombre ?? 'Sin asignar' }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
+            <span style="color: var(--text-secondary);">Cargo del Líder</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $ministerio->lider?->cargo?->nombre ?? 'N/A' }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px;">
             <span style="color: var(--text-secondary);">Descripción</span>
@@ -35,7 +39,6 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Cargo</th>
                     <th>Fecha de Inicio</th>
                     <th>Fecha de Fin</th>
                 </tr>
@@ -45,13 +48,12 @@
 
                     <tr>
                         <td>{{ $miembro->nombre }}</td>
-                        <td>{{ $miembro->pivot->cargo_id ? \App\Models\Cargo::find($miembro->pivot->cargo_id)?->nombre : 'N/A' }}</td>
                         <td>{{ \Carbon\Carbon::parse($miembro->pivot->fecha_inicio)->format('d/m/Y') }}</td>
                         <td>{{ $miembro->pivot->fecha_fin ? \Carbon\Carbon::parse($miembro->pivot->fecha_fin)->format('d/m/Y') : 'Actualidad' }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             Este ministerio no tiene miembros asignados.
                         </td>
                     </tr>

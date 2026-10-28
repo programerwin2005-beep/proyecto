@@ -61,7 +61,6 @@ $crud = [
     'edit' => 'editar',
     'update' => 'editar',
     'destroy' => 'eliminar',
-    'restore' => 'eliminar',
 ];
 
 // módulo => prefijo de ruta
@@ -101,11 +100,14 @@ $rutas += [
     // Inscripciones
     'inscripciones.gestion' => ['inscripciones', 'ver'],
 
+    // Acceso del docente (crear su usuario)
+    'docentes.acceso' => ['docentes', 'editar'],
+    'docentes.acceso.store' => ['docentes', 'editar'],
+
     // Pagos (parte del módulo Inscripciones)
     'pagos.create' => ['inscripciones', 'crear'],
     'pagos.store' => ['inscripciones', 'crear'],
     'pagos.destroy' => ['inscripciones', 'eliminar'],
-    'pagos.restore' => ['inscripciones', 'eliminar'],
 
     // Sesiones
     'sesiones.generar' => ['sesiones', 'crear'],

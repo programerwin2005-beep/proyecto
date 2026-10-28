@@ -11,7 +11,10 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class ReactivacionRegistrosTest extends TestCase
+/**
+ * La eliminación es solo lógica: un registro eliminado no vuelve a activarse.
+ */
+class EliminacionLogicaTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -48,7 +51,7 @@ class ReactivacionRegistrosTest extends TestCase
         ]);
     }
 
-    public function test_reinscribir_restaura_la_inscripcion_borrada(): void
+    public function test_no_se_reinscribe_una_inscripcion_eliminada(): void
     {
         $miembro = $this->miembro();
         $curso = $this->curso();
@@ -67,16 +70,10 @@ class ReactivacionRegistrosTest extends TestCase
                 'miembro_id' => $miembro->id,
                 'fecha_inscripcion' => now()->toDateString(),
             ])
-            ->assertRedirect(route('inscripciones.gestion', $curso))
-            ->assertSessionHas('success', 'Se reactivó la inscripción existente.');
+            ->assertSessionHas('error', 'Ya existe una inscripción eliminada para este miembro en este curso.');
 
         $this->assertDatabaseCount('inscripciones', 1);
-
-        $reactivada = Inscripcion::findOrFail($inscripcion->id);
-
-        $this->assertNull($reactivada->deleted_at);
-        $this->assertSame('Activo', $reactivada->estado);
-        $this->assertSame(now()->toDateString(), $reactivada->fecha_inscripcion);
+        $this->assertSoftDeleted('inscripciones', ['id' => $inscripcion->id]);
     }
 
     public function test_no_duplica_una_inscripcion_activa(): void
@@ -101,7 +98,7 @@ class ReactivacionRegistrosTest extends TestCase
         $this->assertDatabaseCount('inscripciones', 1);
     }
 
-    public function test_registrar_docente_reactiva_el_docente_borrado(): void
+    public function test_no_se_registra_un_docente_eliminado(): void
     {
         $miembro = $this->miembro();
 
@@ -120,14 +117,9 @@ class ReactivacionRegistrosTest extends TestCase
                 'titulo' => 'Licenciado',
                 'activo' => 1,
             ])
-            ->assertRedirect(route('docentes.index'))
-            ->assertSessionHas('success', 'Se reactivó el docente existente.');
+            ->assertSessionHas('error', 'Ya existe un docente eliminado para este miembro.');
 
         $this->assertDatabaseCount('docentes', 1);
-
-        $reactivado = Docente::findOrFail($docente->id);
-
-        $this->assertNull($reactivado->deleted_at);
-        $this->assertSame('Física', $reactivado->especialidad);
+        $this->assertSoftDeleted('docentes', ['id' => $docente->id]);
     }
 }

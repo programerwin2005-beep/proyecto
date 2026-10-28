@@ -52,9 +52,22 @@ class ReporteController extends Controller
         $desde = $request->input('desde', '');
         $hasta = $request->input('hasta', '');
 
-        $cursos = Curso::orderBy('nombre')->get();
-
+        $cursosQuery = Curso::query()->orderBy('nombre');
         $query = Asistencia::with(['miembro', 'sesion.curso']);
+
+        if (auth()->user()->esDocente()) {
+            $docente = auth()->user()->docente;
+
+            if ($docente && $docente->activo) {
+                $cursosQuery->paraDocente($docente->id);
+                $query->whereHas('sesion', fn ($q) => $q->paraDocente($docente->id));
+            } else {
+                $cursosQuery->whereRaw('1 = 0');
+                $query->whereRaw('1 = 0');
+            }
+        }
+
+        $cursos = $cursosQuery->get();
 
         if ($cursoId) {
             $query->whereHas('sesion', fn ($q) => $q->where('id_curso', $cursoId));

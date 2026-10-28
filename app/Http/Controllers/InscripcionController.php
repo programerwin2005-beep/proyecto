@@ -35,8 +35,7 @@ class InscripcionController extends Controller
     {
         $curso = Curso::withTrashed()->findOrFail($id);
 
-        $inscripciones = Inscripcion::withTrashed()
-            ->with(['miembro', 'pagos' => fn ($q) => $q->withTrashed()])
+        $inscripciones = Inscripcion::with(['miembro', 'pagos' => fn ($q) => $q->withTrashed()])
             ->withSum(['pagos' => fn ($q) => $q->withTrashed()], 'monto')
             ->where('curso_id', $id)
             ->orderBy('fecha_inscripcion')
@@ -66,27 +65,18 @@ class InscripcionController extends Controller
             ->where('curso_id', $curso->id)
             ->first();
 
-        if ($existente && ! $existente->trashed()) {
-            return back()->with('error', 'El miembro ya está inscrito en este curso.');
+        if ($existente) {
+            $mensaje = $existente->trashed()
+                ? 'Ya existe una inscripción eliminada para este miembro en este curso.'
+                : 'El miembro ya está inscrito en este curso.';
+
+            return back()->with('error', $mensaje);
         }
 
         $inscritos = Inscripcion::where('curso_id', $curso->id)->count();
 
         if ($inscritos >= $curso->cupo_max) {
             return back()->with('error', 'El curso alcanzó su cupo máximo de '.$curso->cupo_max.' inscritos.');
-        }
-
-        // Si la inscripción estaba borrada lógicamente se reactiva: conserva
-        // su historial de pagos y evita chocar con el índice UNIQUE.
-        if ($existente) {
-            $existente->restore();
-            $existente->update([
-                'fecha_inscripcion' => $validated['fecha_inscripcion'],
-                'estado' => 'Activo',
-            ]);
-
-            return redirect()->route('inscripciones.gestion', $curso->id)
-                ->with('success', 'Se reactivó la inscripción existente.');
         }
 
         Inscripcion::create($validated + [
@@ -132,13 +122,4 @@ class InscripcionController extends Controller
             ->with('success', 'Inscripción eliminada lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $inscripcion = Inscripcion::withTrashed()->findOrFail($id);
-        $cursoId = $inscripcion->curso_id;
-        $inscripcion->restore();
-
-        return redirect()->route('inscripciones.gestion', $cursoId)
-            ->with('success', 'Inscripción restaurada con éxito.');
-    }
 }

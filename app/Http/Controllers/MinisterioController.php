@@ -4,24 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MinisterioRequest;
 use App\Models\LiderIglesia;
-use App\Models\Miembro;
 use App\Models\Ministerio;
 
 class MinisterioController extends Controller
 {
     public function index()
     {
-        $ministerios = Ministerio::with('liderable')->paginate(10);
+        $ministerios = Ministerio::with('lider.cargo')->paginate(10);
 
         return view('ministerios.index', compact('ministerios'));
     }
 
     public function create()
     {
-        $miembros = Miembro::all();
-        $lideres = LiderIglesia::all();
+        $lideres = LiderIglesia::with('cargo')->orderBy('nombre')->get();
 
-        return view('ministerios.create', compact('miembros', 'lideres'));
+        return view('ministerios.create', compact('lideres'));
     }
 
     public function store(MinisterioRequest $request)
@@ -33,7 +31,7 @@ class MinisterioController extends Controller
 
     public function show($id)
     {
-        $ministerio = Ministerio::with(['liderable', 'miembros'])->withTrashed()->findOrFail($id);
+        $ministerio = Ministerio::with(['lider.cargo', 'miembros'])->withTrashed()->findOrFail($id);
 
         return view('ministerios.show', compact('ministerio'));
     }
@@ -41,10 +39,9 @@ class MinisterioController extends Controller
     public function edit($id)
     {
         $ministerio = Ministerio::withTrashed()->findOrFail($id);
-        $miembros = Miembro::all();
-        $lideres = LiderIglesia::all();
+        $lideres = LiderIglesia::with('cargo')->orderBy('nombre')->get();
 
-        return view('ministerios.edit', compact('ministerio', 'miembros', 'lideres'));
+        return view('ministerios.edit', compact('ministerio', 'lideres'));
     }
 
     public function update(MinisterioRequest $request, $id)
@@ -61,13 +58,5 @@ class MinisterioController extends Controller
         $ministerio->delete();
 
         return redirect()->route('ministerios.index')->with('success', 'Ministerio eliminado lógicamente.');
-    }
-
-    public function restore($id)
-    {
-        $ministerio = Ministerio::withTrashed()->findOrFail($id);
-        $ministerio->restore();
-
-        return redirect()->route('ministerios.index')->with('success', 'Ministerio restaurado con éxito.');
     }
 }

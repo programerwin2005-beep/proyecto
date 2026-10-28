@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -43,9 +44,24 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class)->withTimestamps();
     }
 
+    public function docente(): HasOne
+    {
+        return $this->hasOne(Docente::class, 'user_id');
+    }
+
     public function hasRole(string $roleName): bool
     {
         return $this->roles()->where('nombre', $roleName)->exists();
+    }
+
+    public function esDocente(): bool
+    {
+        return $this->hasRole('Docente');
+    }
+
+    public function docenteActivo(): bool
+    {
+        return (bool) $this->docente?->activo;
     }
 
     public function esAdministrador(): bool

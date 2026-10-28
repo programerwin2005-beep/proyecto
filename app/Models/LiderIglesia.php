@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LiderIglesia extends Model
@@ -43,8 +42,8 @@ class LiderIglesia extends Model
         );
     }
 
-    public function ministerios(): MorphMany
+    public function ministerios(): HasMany
     {
-        return $this->morphMany(Ministerio::class, 'liderable');
+        return $this->hasMany(Ministerio::class, 'id_lider_iglesia');
     }
 }

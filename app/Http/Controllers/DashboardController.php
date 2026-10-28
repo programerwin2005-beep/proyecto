@@ -22,6 +22,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // El docente solo necesita sus sesiones y la asistencia; no debe ver
+        // indicadores financieros globales del panel administrativo.
+        if (auth()->user()->esDocente()) {
+            return redirect()->route('sesiones.index');
+        }
+
         $hoy = now()->toDateString();
         $inicioMes = now()->startOfMonth()->toDateString();
         $finMes = now()->endOfMonth()->toDateString();

@@ -98,11 +98,4 @@ class EgresoController extends Controller
         return redirect()->route('egresos.index')->with('success', 'Egreso eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $egreso = Egreso::withTrashed()->findOrFail($id);
-        $egreso->restore();
-
-        return redirect()->route('egresos.index')->with('success', 'Egreso restaurado con éxito.');
-    }
 }

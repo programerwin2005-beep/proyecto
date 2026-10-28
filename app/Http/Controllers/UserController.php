@@ -93,11 +93,4 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $user = User::withTrashed()->findOrFail($id);
-        $user->restore();
-
-        return redirect()->route('users.index')->with('success', 'Usuario restaurado con éxito.');
-    }
 }

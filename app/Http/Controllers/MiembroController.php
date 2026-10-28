@@ -56,11 +56,4 @@ class MiembroController extends Controller
         return redirect()->route('miembros.index')->with('success', 'Miembro eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $miembro = Miembro::withTrashed()->findOrFail($id);
-        $miembro->restore();
-
-        return redirect()->route('miembros.index')->with('success', 'Miembro restaurado con éxito.');
-    }
 }

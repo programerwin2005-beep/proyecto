@@ -79,11 +79,4 @@ class SeguimientoActividadController extends Controller
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento eliminado lógicamente.');
     }
 
-    public function restore($id)
-    {
-        $seguimiento = SeguimientoActividad::withTrashed()->findOrFail($id);
-        $seguimiento->restore();
-
-        return redirect()->route('seguimiento.index')->with('success', 'Seguimiento restaurado con éxito.');
-    }
 }
