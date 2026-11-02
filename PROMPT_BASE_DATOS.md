@@ -52,6 +52,7 @@ Tu tarea es responder preguntas de negocio, escribir consultas SQL, proponer ín
 | `email_verified_at` | TIMESTAMP NULL | |
 | `password` | VARCHAR(255) NO NULL | hash |
 | `remember_token` | VARCHAR(100) NULL | |
+| `last_login_at` | TIMESTAMP NULL | último acceso exitoso; alimenta G1/G2 |
 | `created_at`, `updated_at` | TIMESTAMP NULL | |
 | `deleted_at` | TIMESTAMP NULL | borrado lógico |
 
@@ -68,7 +69,7 @@ Tu tarea es responder preguntas de negocio, escribir consultas SQL, proponer ín
 
 **`role_user`** — pivote N:M usuario ↔ rol.
 `id` PK, `user_id` → `users.id`, `role_id` → `roles.id`, `created_at`, `updated_at`, `deleted_at`.
-Ambas FK con `ON DELETE CASCADE`. Índices individuales por FK.
+Ambas FK con `ON DELETE CASCADE`. Índices individuales por FK. El `deleted_at` se filtra siempre con `wherePivotNull('deleted_at')`; los desvínculos son lógicos y el código los restaura con `withTrashed()` + `restore()`.
 
 **`permisos`** — permisos por rol y módulo.
 | Columna | Tipo | Notas |
@@ -93,8 +94,9 @@ Módulos válidos: `usuarios`, `roles`, `permisos`, `miembros`, `cargos`, `lider
 `id`, `nombre` VARCHAR(255), `descripcion` TEXT NULL, `nivel_jerarquico` INT default `1`, `created_at`, `updated_at`, `deleted_at`.
 Valores actuales: Pastor, lider, Apostol, Diacono, Secretario, Tesorero, Ujier, Discipulador.
 
-**`lideres_iglesia`** — líderes (pueden no ser miembros registrados).
+**`lideres_iglesia`** — entidad independiente de `miembros`.
 `id`, `id_cargo` → `cargos.id` (**CASCADE**), `nombre` VARCHAR(255), `telefono` VARCHAR(255) NULL, `fecha_inicio` DATE, `activo` TINYINT(1) default `1`, timestamps, `deleted_at`.
+No tiene FK ni vínculo con `miembros`: una persona puede ser líder, miembro o ambas cosas sin compartir registro. Solo `lideres_iglesia` puede estar a cargo de un ministerio (`ministerios.id_lider_iglesia`); los miembros solo integran mediante `miembro_ministerio`. La migración `2026_10_28_000006` eliminó la columna `id_miembro`, su UNIQUE y su FK que había agregado `2026_10_28_000005`; los 6 líderes actuales conservan sus datos propios.
 
 **`miembros`** — personas de la iglesia.
 | Columna | Tipo | Notas |
@@ -107,7 +109,11 @@ Valores actuales: Pastor, lider, Apostol, Diacono, Secretario, Tesorero, Ujier, 
 | `f_nacimiento` | DATE NULL | |
 | `sexo` | VARCHAR(10) NULL | |
 | `fecha_ingreso` | DATE NO NULL | |
-| `estado` | VARCHAR(255) | default `Activo`; también `Inactivo` |
+| `fecha_baja` | DATE NULL | baja de membresía |
+| `motivo_baja` | VARCHAR(255) NULL | motivo de la baja |
+| `fecha_conversion` | DATE NULL | crecimiento espiritual |
+| `fecha_bautismo` | DATE NULL | crecimiento espiritual |
+| `estado` | VARCHAR(255) | default `Activo`; enum `EstadoMiembro`: `Activo`, `Inactivo` |
 | `created_at`, `updated_at`, `deleted_at` | TIMESTAMP NULL | |
 
 **`docentes`** — extensión de miembro con rol docente (1:1 lógica).
@@ -120,37 +126,37 @@ Valores actuales: Pastor, lider, Apostol, Diacono, Secretario, Tesorero, Ujier, 
 | `id_miembro` | FK → `miembros.id` | CASCADE, NO NULL |
 | `id_cargo` | FK → `cargos.id` NULL | **SET NULL** |
 | `id_lider_iglesia` | FK → `lideres_iglesia.id` NULL | **SET NULL** |
-| `tipo_compensacion` | VARCHAR(255) | default `Salario` |
+| `tipo_compensacion` | VARCHAR(255) | default `Salario`; enum `TipoCompensacion` |
 | `salario` | DECIMAL(10,2) | |
 | `fecha_inicio` | DATE | |
 | `fecha_fin` | DATE NULL | |
 | `activo` | TINYINT(1) | default `1` |
 | `created_at`, `updated_at`, `deleted_at` | TIMESTAMP NULL | |
 
-> ⚠️ **`id_cargo` existe en la base viva pero NO en las migraciones.** Los 5 contratos actuales lo usan. Es el cargo que ocupa el miembro al firmar, y es independiente del `cargo_id` de `miembro_ministerio`.
+> ⚠️ **`id_cargo` es legacy:** `2026_10_28_000001` la reconcilió en las migraciones con FK a `cargos.id` (`SET NULL`), pero ningún código PHP la lee ni la escribe. El cargo visible del contrato se deriva de `id_lider_iglesia → lideres_iglesia.id_cargo`. Los 5 contratos actuales la conservan solo como dato histórico. No la uses en consultas nuevas; su eliminación queda pendiente de decisión.
 >
 > **Regla de negocio:** no puede haber dos contratos solapados para el mismo miembro. Solapamiento = `nueva_inicio <= COALESCE(existente.fecha_fin, '9999-12-31')` **y** `COALESCE(nueva.fin, '9999-12-31') >= existente.fecha_inicio`, excluyendo el propio contrato al editar. La BD **no** impone esta restricción.
 >
 > **Vigencia calculada:** `Futuro` si `fecha_inicio > hoy`; `Vencido` si `fecha_fin < hoy`; `Por vencer` si vence en ≤ 30 días; `Vigente` si `fecha_fin IS NULL` o es futura; `Eliminado` si `deleted_at IS NOT NULL`.
 
 **`ministerios`**
-`id`, `nombre` VARCHAR(255), `descripcion` TEXT NULL, `liderable_type` VARCHAR(255) NULL, `liderable_id` BIGINT UNSIGNED NULL, timestamps, `deleted_at`.
-Índice (`liderable_type`, `liderable_id`).
-Relación **polimórfica**: `liderable_type` guarda el FQCN real con doble barra invertida, p. ej. `App\\Models\\LiderIglesia` o `App\\Models\\Miembro`. En la BD actual solo el ministerio `Musical` tiene líder (`LiderIglesia` id 1); los otros 5 tienen `NULL`.
+`id`, `nombre` VARCHAR(255), `descripcion` TEXT NULL, `id_lider_iglesia` → `lideres_iglesia.id` NULL (**SET NULL**), timestamps, `deleted_at`.
+La migración `2026_10_27_000001` eliminó el esquema polimórfico (`liderable_type`, `liderable_id`). El líder se resuelve con un único `LEFT JOIN` por `id_lider_iglesia`. En los datos actuales solo el ministerio `Musical` tiene líder; los otros 5 tienen `NULL`.
 
-**`miembro_ministerio`** — membresía N:M con cargo y vigencia.
-`id`, `miembro_id` → `miembros.id` (CASCADE), `ministerio_id` → `ministerios.id` (CASCADE), `cargo_id` → `cargos.id` (CASCADE, NO NULL), `fecha_inicio` DATE, `fecha_fin` DATE NULL, timestamps, `deleted_at`.
-Actualmente **vacía (0 filas)**.
+**`miembro_ministerio`** — composición N:M con vigencia.
+`id`, `miembro_id` → `miembros.id` (CASCADE), `ministerio_id` → `ministerios.id` (CASCADE), `fecha_inicio` DATE, `fecha_fin` DATE NULL, timestamps, `deleted_at`.
+**UNIQUE `(miembro_id, ministerio_id)`** desde `2026_10_28_000005`; incluye las filas con `deleted_at`, por eso `VinculoPivote` restaura el vínculo y conserva `fecha_inicio` en lugar de insertar otra fila. La migración `2026_10_27_000001` eliminó `cargo_id`: el pivote ya no guarda el cargo. Actualmente **vacía (0 filas)**.
+La composición se administra desde `ministerios.create|edit`; el líder (`ministerios.id_lider_iglesia`) no se agrega automáticamente al pivote.
 
 ### 4.3 Actividades
 
 **`actividades`**
-`id`, `id_ministerio` → `ministerios.id` (CASCADE), `nombre` VARCHAR(255), `fecha` DATE, `lugar` VARCHAR(255) NULL, `descripcion` TEXT NULL, `estado` VARCHAR(255) default `Programado`, timestamps, `deleted_at`.
-Valores actuales de `estado`: solo `Programado` (6 filas).
+`id`, `id_ministerio` → `ministerios.id` (CASCADE), `nombre` VARCHAR(255), `fecha` DATE, `fecha_fin` DATE NULL, `presupuesto` DECIMAL(12,2) NULL, `costo_real` DECIMAL(12,2) NULL, `lugar` VARCHAR(255) NULL, `descripcion` TEXT NULL, `estado` VARCHAR(255) default `Programado`, timestamps, `deleted_at`.
+Enum `EstadoActividad`: `Programado`, `En Progreso`, `Completada`, `Cancelada`. Valores actuales: solo `Programado` (6 filas).
 
 **`seguimiento_actividades`** — avances de una actividad.
 `id`, `id_actividad` → `actividades.id` (CASCADE), `fecha_registro` DATE, `observacion` TEXT NULL, `responsable` VARCHAR(255), `porcentaje_avance` DECIMAL(5,2) default `0.00` (0–100), `estado` VARCHAR(255) default `En Progreso`, timestamps, `deleted_at`.
-Valores actuales de `estado`: solo `En Progreso`.
+Enum `EstadoSeguimiento`: `En Progreso`, `Completado`, `Detenido`. Valores actuales: solo `En Progreso`.
 
 ### 4.4 Cursos, sesiones y asistencia
 
@@ -173,11 +179,12 @@ Valores actuales de `estado`: solo `En Progreso`.
 
 **`docente_curso`** — pivote N:M docente ↔ curso.
 `id`, `docente_id` → `docentes.id` (CASCADE), `curso_id` → `cursos.id` (CASCADE), timestamps, `deleted_at`.
-Actualmente **vacía (0 filas)**, aunque `sesiones.id_docente` sí está poblado en algunos casos.
+Actualmente **vacía (0 filas)**, aunque `sesiones.id_docente` sí está poblado en algunos casos. Los desvínculos son lógicos y se filtran con `wherePivotNull('deleted_at')`.
 
 **`inscripciones`**
-`id`, `miembro_id` → `miembros.id` (CASCADE), `curso_id` → `cursos.id` (CASCADE), `fecha_inscripcion` DATE, `estado` VARCHAR(255) default `Activo`, timestamps, `deleted_at`.
-Valores actuales: solo `Activo` (12 filas).
+`id`, `miembro_id` → `miembros.id` (CASCADE), `curso_id` → `cursos.id` (CASCADE), `fecha_inscripcion` DATE, `fecha_vencimiento` DATE NULL (agregada por `2026_10_28_000001`), `estado` VARCHAR(255) default `Activo`, timestamps, `deleted_at`.
+Enum `EstadoInscripcion`: `Activo`, `Retirado`, `Completado`. Valores actuales: solo `Activo` (12 filas).
+UNIQUE (`miembro_id`, `curso_id`) incluye las filas eliminadas: al reinscribir se restaura la fila con `withTrashed()` + `restore()`.
 
 > **Saldo:** `monto_pagado = SUM(pago_cursos.monto)` con `pago_cursos.deleted_at IS NULL`; `saldo_pendiente = MAX(0, cursos.monto_inscripcion - monto_pagado)`.
 > `estado_pago`: `Pagado` si saldo = 0 · `Pago Parcial` si 0 < pagado < monto · `Pendiente` si pagado = 0.
@@ -189,17 +196,22 @@ Valores actuales: solo `Activo` (12 filas).
 
 **`asistencias_sesion`**
 `id`, `miembro_id` → `miembros.id` (CASCADE), `sesion_id` → `sesiones.id` (CASCADE), `user_id` → `users.id` NULL (SET NULL, quién registró), `estado` VARCHAR(255) (**sin default**), `observacion` TEXT NULL, timestamps, `deleted_at`.
-Valores actuales: `Presente` (3), `Tardanza` (1), `Ausente` (1). Nota: **no hay UNIQUE (`sesion_id`, `miembro_id`)**, así que se pueden duplicar asistencias; hay que agrupar o validar aparte.
+Enum `EstadoAsistencia`: `Presente`, `Ausente`, `Tardanza`, `Justificado`. Valores actuales: `Presente` (3), `Tardanza` (1), `Ausente` (1).
+UNIQUE (`sesion_id`, `miembro_id`) creado por `2026_10_28_000002`, previa verificación de duplicados. Incluye filas eliminadas: la restauración se resuelve en código.
+
+**`asistencias_culto`** — asistencia individual a un culto (tabla nueva de `2026_10_28_000001`).
+`id`, `miembro_id` → `miembros.id` (CASCADE), `culto_id` → `cultos.id` (CASCADE), `fecha` DATE, `estado` VARCHAR(255) default `Presente`, `observacion` TEXT NULL, timestamps, `deleted_at`.
+UNIQUE (`miembro_id`, `culto_id`, `fecha`). Hay modelo `AsistenciaCulto` y relaciones, pero aún no tiene pantallas ni KPIs.
 
 ### 4.5 Finanzas
 
 **`pago_cursos`**
 `id`, `inscripcion_id` → `inscripciones.id` (CASCADE), `monto` DECIMAL(10,2), `fecha_pago` DATE, `metodo_pago` VARCHAR(255), `comprobante` VARCHAR(255) NULL, `registrado_por` → `users.id` NULL (SET NULL), timestamps, `deleted_at`.
-Métodos observados: `Efectivo`, `Transferencia`.
+Enum `MetodoPago`: `Efectivo`, `Transferencia`, `Tarjeta`. Valores observados: `Efectivo`, `Transferencia`.
 
 **`cultos`**
 `id`, `id_lider_iglesia` → `lideres_iglesia.id` (CASCADE), `nombre` VARCHAR(255), `dia_semana` VARCHAR(255), `hora` TIME, `descripcion` TEXT NULL, timestamps, `deleted_at`.
-Valores reales de `dia_semana`: `Sabado` (sin tilde), `Domingo`, `Viernes`.
+Enum `DiaSemana`: `Lunes`, `Martes`, `Miércoles`, `Jueves`, `Viernes`, `Sábado`, `Domingo`. Valores normalizados actuales: `Sábado` (4), `Domingo` (1), `Viernes` (1). El valor histórico `Sabado` fue normalizado a `Sábado`.
 
 **`ingresos`**
 | Columna | Tipo | Notas |
@@ -208,13 +220,14 @@ Valores reales de `dia_semana`: `Sabado` (sin tilde), `Domingo`, `Viernes`.
 | `id_actividad` | FK → `actividades.id` NULL | SET NULL |
 | `id_culto` | FK → `cultos.id` NULL | SET NULL |
 | `pago_curso_id` | FK → `pago_cursos.id` NULL | SET NULL |
+| `categoria_id` | FK → `categorias_financieras.id` NULL | SET NULL |
 | `monto_total` | DECIMAL(12,2) | |
 | `fecha` | DATE | |
-| `tipo` | VARCHAR(255) | **texto libre**, ver abajo |
-| `metodo_pago` | VARCHAR(255) | `Efectivo`, `Transferencia`, `Tarjeta` |
+| `tipo` | VARCHAR(255) | enum `TipoIngreso`; texto de respaldo |
+| `metodo_pago` | VARCHAR(255) | enum `MetodoPago`: `Efectivo`, `Transferencia`, `Tarjeta` |
 | `created_at`, `updated_at`, `deleted_at` | TIMESTAMP NULL | |
 
-> ⚠️ **`tipo` NO es un ENUM.** Valores observados: `Ofrenda`, `Donación`, `Inscripción`, `Diezmo` y también `Inscripción Curso: Taller de Canto`. Al agrupar, normaliza con `CASE` o `LIKE 'Inscripci%'`. No filtres con `tipo = 'Inscripción'` esperando atrapar los pagos de curso.
+> **`tipo` ya está normalizado:** enum `TipoIngreso` = `Diezmo`, `Ofrenda`, `Donación`, `Inscripción`, `Actividad`, `Otros`. La migración `2026_10_28_000004` convirtió `Inscripción Curso: …` en `Inscripción`. El texto se conserva como respaldo y `categoria_id` es la referencia principal; los valores desconocidos no se borran y el cast tolerante los expone como `null` hasta revisarlos.
 
 > **Origen del ingreso (datos reales de 13 filas):** 3 por actividad, 5 por culto, 4 por pago de curso, **1 sin origen** (`id_actividad`, `id_culto` y `pago_curso_id` todos NULL). No asumas que todo ingreso tiene origen.
 
@@ -226,7 +239,8 @@ Valores reales de `dia_semana`: `Sabado` (sin tilde), `Domingo`, `Viernes`.
 | `id` | BIGINT UNSIGNED PK | |
 | `id_lider_iglesia` | FK → `lideres_iglesia.id` NULL | **SET NULL** |
 | `id_contrato` | FK → `contratos.id` NULL | **SET NULL** |
-| `tipo_egreso` | VARCHAR(255) | **texto libre** |
+| `categoria_id` | FK → `categorias_financieras.id` NULL | SET NULL |
+| `tipo_egreso` | VARCHAR(255) | enum `TipoEgreso`; texto de respaldo |
 | `monto` | DECIMAL(12,2) | |
 | `fecha` | DATE | |
 | `descripcion` | TEXT NULL | |
@@ -234,13 +248,35 @@ Valores reales de `dia_semana`: `Sabado` (sin tilde), `Domingo`, `Viernes`.
 | `comprobante` | VARCHAR(255) NULL | |
 | `created_at`, `updated_at`, `deleted_at` | TIMESTAMP NULL | |
 
-> ⚠️ **`id_lider_iglesia` existe en la base viva pero NO en las migraciones.** Sirve para pagos directos a un líder sin contrato. En los datos actuales: 2 egresos con `id_contrato` (salarios) y 3 con `id_lider_iglesia` (servicio, mantenimiento, ayuda social).
+> **`id_lider_iglesia` ya está en migraciones:** `2026_10_28_000001` la reconcilia. Sirve para pagos directos a un líder sin contrato. Un egreso **no puede** tener `id_contrato` e `id_lider_iglesia` a la vez (`EgresoRequest`); aun así, los KPIs cuentan cada fila una sola vez.
 >
-> ⚠️ **`tipo_egreso` NO es un ENUM.** Observados: `Mantenimiento`, `Salario`, `Servicio`, `Ayuda Social` y `Otros Egresos`. Normaliza con `CASE`.
+> **`tipo_egreso` ya está normalizado:** enum `TipoEgreso` = `Mantenimiento`, `Servicios Básicos`, `Salarios`, `Honorarios`, `Ayuda Comunitaria`, `Otros Egresos`. Alias heredados convertidos: `Salario`/`Salarios / Honorarios` → `Salarios`, `Servicio` → `Servicios Básicos`, `Ayuda Social` → `Ayuda Comunitaria`.
+
+**`categorias_financieras`** — catálogo normalizado de ingresos y egresos.
+`id`, `nombre` VARCHAR(100), `naturaleza` VARCHAR(10) (`ingreso` | `egreso`), `activo` TINYINT(1) default `1`, timestamps, `deleted_at`.
+UNIQUE (`nombre`, `naturaleza`). Sembrado con 12 categorías (6 de ingreso, 6 de egreso) por `2026_10_28_000004`. `ingresos.categoria_id` y `egresos.categoria_id` apuntan aquí; el texto original queda como respaldo.
+
+**`presupuestos`** — presupuesto mensual por categoría (tabla nueva de `2026_10_28_000001`).
+`id`, `anio` SMALLINT, `mes` TINYINT, `categoria_id` → `categorias_financieras.id` (CASCADE), `monto_planificado` DECIMAL(12,2), timestamps, `deleted_at`.
+UNIQUE (`anio`, `mes`, `categoria_id`). Hay modelo `Presupuesto` y relaciones, pero aún no tiene pantallas ni KPIs.
 
 ### 4.6 Tablas de infraestructura Laravel
 
 No las uses para reportes de negocio: `sessions`, `password_reset_tokens`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `migrations`.
+
+### 4.7 Auditoría y calidad
+
+**`audit_logs`** — acciones de escritura sobre los módulos.
+`id`, `user_id` → `users.id` NULL (SET NULL), `modulo` VARCHAR(100), `accion` VARCHAR(50) (`crear`, `editar`, `eliminar`), `entidad_type` VARCHAR(255) NULL (nombre de ruta), `entidad_id` BIGINT NULL, `metadata` JSON NULL, `ip` VARCHAR(45) NULL, timestamps.
+Lo escribe el middleware `AuditaAcciones` en cada `POST`/`PUT`/`PATCH`/`DELETE` autenticado. **Nunca** guarda contraseñas, tokens ni el cuerpo de la petición. Alimenta G4.
+
+**`metricas_calidad`** — snapshots de cobertura y pruebas.
+`id`, `fuente` VARCHAR(50), `metrica` VARCHAR(100), `valor` DECIMAL(14,4) NULL, `texto` VARCHAR(255) NULL, `metadata` JSON NULL, `capturado_en` TIMESTAMP, timestamps.
+Lo llena `php artisan kpi:importar-calidad` desde `coverage.xml`, `build/logs/junit.xml` y `resultados_sast.json`.
+
+**`hallazgos_seguridad`** — hallazgos SAST deduplicados.
+`id`, `fuente` VARCHAR(50), `severidad` VARCHAR(20), `estado` VARCHAR(30) default `abierto`, `regla` VARCHAR(255) NULL, `archivo` VARCHAR(500) NULL, `linea` INT NULL, `fingerprint` CHAR(64) UNIQUE NULL, `metadata` JSON NULL, timestamps.
+El `fingerprint` (SHA-256 de fuente + regla + archivo + línea) evita duplicados entre importaciones. Los archivos ausentes generan advertencia, no error.
 
 ## 5. Mapa de relaciones
 
@@ -250,8 +286,7 @@ erDiagram
     roles ||--o{ role_user : asigna
     roles ||--o{ permisos : define
     cargos ||--o{ lideres_iglesia : ocupa
-    cargos ||--o{ miembro_ministerio : cargo
-    cargos ||--o{ contratos : puesto
+    lideres_iglesia ||--o{ ministerios : lidera
     lideres_iglesia ||--o{ cultos : dirige
     lideres_iglesia ||--o{ contratos : supervisa
     lideres_iglesia ||--o{ egresos : cobra
@@ -278,39 +313,61 @@ erDiagram
 
 ## 6. Glosario de valores
 
-| Campo | Valores observados en la BD |
-|---|---|
-| `miembros.estado` | `Activo` (6), `Inactivo` (1) |
-| `roles.estado` | `Activo` (3) |
-| `inscripciones.estado` | `Activo` (12) |
-| `actividades.estado` | `Programado` (6) |
-| `seguimiento_actividades.estado` | `En Progreso` (5) |
-| `asistencias_sesion.estado` | `Presente` (3), `Ausente` (1), `Tardanza` (1) |
-| `contratos.tipo_compensacion` | `Salario` (5) |
-| `ingresos.tipo` | `Ofrenda` (5), `Donación` (2), `Inscripción` (1), `Diezmo` (1), `Inscripción Curso: Taller de Canto` (4) |
-| `ingresos.metodo_pago` | `Efectivo` (10), `Transferencia` (2), `Tarjeta` (1) |
-| `pago_cursos.metodo_pago` | `Efectivo` (3), `Transferencia` (1) |
-| `egresos.tipo_egreso` | `Mantenimiento` (2), `Salario` (2), `Servicio` (1), `Ayuda Social` (1), `Otros Egresos` (1) |
-| `cultos.dia_semana` | `Sabado` (4), `Domingo` (1), `Viernes` (1) |
-| `cursos.dias_semana` | JSON de strings: `["1"]`, `["6"]` (1 = lunes … 7 = domingo) |
+Los estados y tipos se representan con **Enums de PHP** (`app/Enums`) y se guardan como `VARCHAR` en la base. **No hay ENUM nativo de MySQL.** Los modelos usan `EnumTolerante`, que devuelve `null` ante un valor heredado desconocido sin modificar el dato original.
 
-> Los campos de estado son **VARCHAR libres**, no ENUM. La lista de arriba es lo que hay hoy, no un catálogo cerrado. Valida con `DISTINCT` antes de asumir.
+| Campo | Enum | Valores canónicos | Datos actuales |
+|---|---|---|---|
+| `miembros.estado` | `EstadoMiembro` | `Activo`, `Inactivo` | `Activo` (6), `Inactivo` (1) |
+| `roles.estado` | — | texto (`Activo`, `Inactivo`) | `Activo` (3) |
+| `inscripciones.estado` | `EstadoInscripcion` | `Activo`, `Retirado`, `Completado` | `Activo` (12) |
+| `actividades.estado` | `EstadoActividad` | `Programado`, `En Progreso`, `Completada`, `Cancelada` | `Programado` (6) |
+| `seguimiento_actividades.estado` | `EstadoSeguimiento` | `En Progreso`, `Completado`, `Detenido` | `En Progreso` (5) |
+| `asistencias_sesion.estado` | `EstadoAsistencia` | `Presente`, `Ausente`, `Tardanza`, `Justificado` | `Presente` (3), `Tardanza` (1), `Ausente` (1) |
+| `asistencias_culto.estado` | `EstadoAsistencia` | igual que la anterior | sin datos |
+| `contratos.tipo_compensacion` | `TipoCompensacion` | `Salario`, `Bono`, `Beneficios`, `Voluntario` | `Salario` (5) |
+| `ingresos.tipo` | `TipoIngreso` | `Diezmo`, `Ofrenda`, `Donación`, `Inscripción`, `Actividad`, `Otros` | `Ofrenda` (5), `Inscripción` (5), `Donación` (2), `Diezmo` (1) |
+| `ingresos.metodo_pago` | `MetodoPago` | `Efectivo`, `Transferencia`, `Tarjeta` | `Efectivo` (7), `Transferencia` (1), `Tarjeta` (1), `NULL` (4) |
+| `pago_cursos.metodo_pago` | `MetodoPago` | `Efectivo`, `Transferencia`, `Tarjeta` | `Efectivo` (3), `Transferencia` (1) |
+| `egresos.tipo_egreso` | `TipoEgreso` | `Mantenimiento`, `Servicios Básicos`, `Salarios`, `Honorarios`, `Ayuda Comunitaria`, `Otros Egresos` | `Mantenimiento` (2), `Salarios` (2), `Servicios Básicos` (1), `Ayuda Comunitaria` (1), `Otros Egresos` (1) |
+| `cultos.dia_semana` | `DiaSemana` | `Lunes` … `Domingo`, con `Sábado` y `Miércoles` acentuados | `Sábado` (4), `Domingo` (1), `Viernes` (1) |
+| `cursos.dias_semana` | — | JSON de strings: `["1"]`, `["6"]` (1 = lunes … 7 = domingo) | sin cambios |
+
+**Alias heredados normalizados por `2026_10_28_000004`:**
+
+| Antes | Después |
+|---|---|
+| `Completado` / `Cancelado` (actividades) | `Completada` / `Cancelada` |
+| `Inscripción Curso: …` / `Inscripción Curso` | `Inscripción` |
+| `Salario` / `Salarios / Honorarios` | `Salarios` |
+| `Servicio` | `Servicios Básicos` |
+| `Ayuda Social` | `Ayuda Comunitaria` |
+| `Sabado` | `Sábado` |
+| `Miercoles` | `Miércoles` |
+
+> Los valores **no reconocidos se conservan** y se registran como advertencia en el log. No los borres ni los reemplaces a ciegas: valida con `SELECT DISTINCT` antes de ampliar el enum.
 
 ## 7. Trampas y advertencias del modelo
 
-- **Deriva de esquema (importante):** `contratos.id_cargo` y `egresos.id_lider_iglesia` existen en la BD con FK, pero **no están en las migraciones**. No ejecutes `migrate:fresh` sin agregarlas o perderás esas columnas y sus datos.
 - **Borrado lógico:** sin `deleted_at IS NULL` los totales se inflan. Aplica el filtro a cada tabla unida. Hoy **ningún** registro está eliminado, pero el código sí borra lógicamente.
-- **Pivotes con `deleted_at`:** `role_user`, `docente_curso` y `miembro_ministerio` lo tienen, pero Eloquent **no lo filtra** en `belongsToMany`. En SQL, filtra explícito.
+- **Pivotes con `deleted_at`:** `role_user`, `docente_curso`, `miembro_ministerio`, `inscripciones` y `asistencias_sesion` lo tienen. Las relaciones Eloquent ya usan `withPivot('deleted_at')` + `wherePivotNull('deleted_at')`; no uses `detach()` físico. Los helpers `VinculoPivote` / `TieneRegistroUnico` restauran con `withTrashed()` + `restore()`.
+- **UNIQUE que incluyen `deleted_at`:** los índices únicos no ignoran las filas eliminadas. Al recrear una relación, restaura la fila existente en lugar de insertar otra. La migración `2026_10_28_000003` verifica duplicados (incluyendo eliminados) y aborta con un mensaje claro antes de tocar índices.
 - **`miembros.email`** es UNIQUE y NULL: varios miembros pueden tener email nulo, pero no repetido.
 - **`ingresos` sin origen:** un ingreso puede no venir de actividad, culto ni pago de curso. Hay 1 caso real.
-- **Doble conteo financiero:** `pago_cursos` e `ingresos` representan el mismo dinero en 4 casos verificados.
+- **Doble conteo financiero:** `pago_cursos` e `ingresos` representan el mismo dinero en 4 casos verificados. El KPI D1 usa solo `ingresos` y resuelve el monto con `COALESCE`.
 - **`contratos` solapados:** la base no lo impide; la validación vive en la aplicación.
-- **`ministerios.liderable_type`** guarda el FQCN con doble barra (`App\\Models\\Miembro`). Para unir hay que hacer dos `LEFT JOIN` condicionados por tipo; no es un JOIN directo.
-- **`lideres_iglesia` y `miembros` son entidades distintas.** Un líder puede no ser miembro. No los unas por nombre.
+- **Líder de ministerio:** usa `ministerios.id_lider_iglesia`. El esquema polimórfico `liderable_type`/`liderable_id` fue eliminado; no lo reintroduzcas.
+- **`lideres_iglesia` y `miembros` son entidades separadas.** No hay FK entre ellas ni columna `id_miembro` (la migración `2026_10_28_000006` revirtió el vínculo de `2026_10_28_000005`). Un líder dirige (`ministerios.id_lider_iglesia`); los miembros integran (`miembro_ministerio`). Si una persona es líder y miembro, son dos registros independientes por decisión del modelo: no los vincules ni los dupliques automáticamente.
+- **Composición de ministerios:** el líder (`ministerios.id_lider_iglesia`) no se guarda en `miembro_ministerio`. La pertenencia vive solo en el pivote, con UNIQUE `(miembro_id, ministerio_id)` y `fecha_inicio`/`fecha_fin`. Un miembro puede integrar varios ministerios (M:N); eso no es duplicación.
+- **`contratos.id_cargo` es legacy.** Ningún código PHP la lee ni la escribe; el cargo visible se deriva de `contratos.id_lider_iglesia → lideres_iglesia.id_cargo`. No la uses en consultas nuevas.
 - **`cursos.dias_semana`** guarda strings: usa `JSON_CONTAINS(dias_semana, '"3"')`, no `'3'`.
-- **`asistencias_sesion`** no tiene UNIQUE (`sesion_id`, `miembro_id`): puede haber duplicados.
+- **`asistencias_sesion`:** el UNIQUE (`sesion_id`, `miembro_id`) ya existe. Si necesitas deduplicar datos heredados, hazlo antes de volver a aplicar la migración de índices.
 - **`salario`** es DECIMAL(10,2); `ingresos.monto_total` y `egresos.monto` son DECIMAL(12,2). No mezcles precisión al comparar.
-- **Dos rutas para un egreso de personal:** `id_contrato` (salario formal) e `id_lider_iglesia` (pago directo). Si reportas "pagos a líderes", considera ambas y evita contar dos veces.
+- **Dos rutas para un egreso de personal:** `id_contrato` (salario formal) e `id_lider_iglesia` (pago directo). `EgresoRequest` impide ambos a la vez y los KPIs cuentan cada fila una sola vez.
+- **Categorías financieras:** `categoria_id` es la referencia principal, pero el texto (`tipo`, `tipo_egreso`) se conserva como respaldo. Si `categoria_id` es `NULL`, agrupa por texto normalizado; no descartes la fila.
+- **Enums:** no hay ENUM nativo en MySQL. Los valores viven en `VARCHAR` y se castean con Enums de PHP. Un valor desconocido se lee como `null`; no lo sobrescribas sin revisarlo.
+- **Auditoría:** `AuditaAcciones` registra solo metadatos (módulo, acción, ruta, estado, IP). Nunca guarda contraseñas, tokens ni el cuerpo de la petición.
+- **Calidad:** `kpi:importar-calidad` advierte y continúa si falta `coverage.xml`, `build/logs/junit.xml` o `resultados_sast.json`; no falla por ausencia de reportes.
+- **`permisos.deleted_at` no existe.** No filtres esa columna.
 - **`permisos`** no aplica al rol Administrador (acceso total por código).
 
 ## 8. Tareas típicas que debes resolver

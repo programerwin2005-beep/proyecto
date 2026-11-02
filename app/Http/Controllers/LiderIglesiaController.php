@@ -59,5 +59,4 @@ class LiderIglesiaController extends Controller
 
         return redirect()->route('lideres.index')->with('success', 'Líder eliminado lógicamente.');
     }
-
 }

@@ -82,7 +82,6 @@ class ContratoController extends Controller
         return redirect()->route('contratos.index')->with('success', 'Contrato eliminado lógicamente.');
     }
 
-
     public function renovar($id)
     {
         $contrato = Contrato::withTrashed()->findOrFail($id);
@@ -97,7 +96,7 @@ class ContratoController extends Controller
         return redirect()->route('contratos.create')->withInput([
             'id_miembro' => $contrato->id_miembro,
             'id_lider_iglesia' => $contrato->id_lider_iglesia,
-            'tipo_compensacion' => $contrato->tipo_compensacion,
+            'tipo_compensacion' => $contrato->tipo_compensacion?->value,
             'salario' => $contrato->salario,
             'fecha_inicio' => $nuevoInicio,
         ])->with('success', 'Contrato anterior cerrado. Revise los datos y guarde la renovación.');

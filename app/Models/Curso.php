@@ -54,7 +54,10 @@ class Curso extends Model
 
     public function docentes(): BelongsToMany
     {
-        return $this->belongsToMany(Docente::class, 'docente_curso')->withTimestamps();
+        return $this->belongsToMany(Docente::class, 'docente_curso')
+            ->withPivot('deleted_at')
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function inscripciones(): HasMany

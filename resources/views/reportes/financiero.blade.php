@@ -28,8 +28,8 @@
         'Bs ' . number_format($total, 2),
     ])->values()->all();
 
-    $conceptoIngreso = fn ($ingreso) => trim($ingreso->tipo . ($ingreso->metodo_pago ? ' · ' . $ingreso->metodo_pago : ''));
-    $conceptoEgreso = fn ($egreso) => trim($egreso->tipo_egreso . ($egreso->descripcion ? ' · ' . $egreso->descripcion : ''));
+    $conceptoIngreso = fn ($ingreso) => trim(($ingreso->tipo?->value ?? 'Sin clasificar') . ($ingreso->metodo_pago ? ' · ' . $ingreso->metodo_pago->value : ''));
+    $conceptoEgreso = fn ($egreso) => trim(($egreso->tipo_egreso?->value ?? 'Sin clasificar') . ($egreso->descripcion ? ' · ' . $egreso->descripcion : ''));
 
     $columnasMovimientos = [
         ['label' => 'Fecha', 'align' => 'center', 'width' => '110px'],

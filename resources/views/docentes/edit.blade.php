@@ -32,12 +32,12 @@
 
         <div class="form-group">
             <label for="especialidad" class="form-label">Especialidad</label>
-            <input id="especialidad" type="text" name="especialidad" class="form-control" value="{{ old('especialidad', $docente->especialidad) }}" required>
+            <input id="especialidad" type="text" name="especialidad" class="form-control" value="{{ old('especialidad', $docente->especialidad) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">
             <label for="titulo" class="form-label">Título</label>
-            <input id="titulo" type="text" name="titulo" class="form-control" value="{{ old('titulo', $docente->titulo) }}">
+            <input id="titulo" type="text" name="titulo" class="form-control" value="{{ old('titulo', $docente->titulo) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)">
         </div>
 
         <div class="form-group">

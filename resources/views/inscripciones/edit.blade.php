@@ -36,9 +36,9 @@
         <div class="form-group">
             <label for="estado" class="form-label">Estado</label>
             <select id="estado" name="estado" class="form-control" required>
-                <option value="Activo" {{ old('estado', $inscripcion->estado) == 'Activo' ? 'selected' : '' }}>Activo</option>
-                <option value="Retirado" {{ old('estado', $inscripcion->estado) == 'Retirado' ? 'selected' : '' }}>Retirado</option>
-                <option value="Completado" {{ old('estado', $inscripcion->estado) == 'Completado' ? 'selected' : '' }}>Completado</option>
+                @foreach(\App\Enums\EstadoInscripcion::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" {{ old('estado', $inscripcion->estado?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                @endforeach
             </select>
         </div>
 

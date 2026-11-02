@@ -34,7 +34,7 @@
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Estado</span>
             <span style="font-weight: 600; color: var(--text-primary);">
-                <span class="badge {{ $actividad->estado == 'Completada' ? 'badge-active' : ($actividad->estado == 'Cancelada' ? 'badge-inactive' : 'badge-warning') }}">{{ $actividad->estado }}</span>
+                <span class="badge {{ $actividad->estado?->value === 'Completada' ? 'badge-active' : ($actividad->estado?->value === 'Cancelada' ? 'badge-inactive' : 'badge-warning') }}">{{ $actividad->estado?->value }}</span>
             </span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px;">
@@ -61,7 +61,7 @@
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($seg->fecha_registro)->format('d/m/Y') }}</td>
                         <td>{{ $seg->responsable }}</td>
-                        <td>{{ $seg->estado }}</td>
+                        <td>{{ $seg->estado?->value }}</td>
                         <td>{{ number_format($seg->porcentaje_avance, 0) }}%</td>
                         <td>{{ $seg->observacion ?? 'N/A' }}</td>
                     </tr>

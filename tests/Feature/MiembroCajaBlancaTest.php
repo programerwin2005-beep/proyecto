@@ -99,6 +99,18 @@ class MiembroCajaBlancaTest extends TestCase
         $this->assertDatabaseCount('miembros', 0);
     }
 
+    // CB-M03c: store() rechaza nombres con números o signos
+    public function test_cb_m03c_store_rechaza_nombre_con_numeros_o_signos(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('miembros.store'), $this->datos([
+                'nombre' => 'Juan Pérez 123',
+            ]))
+            ->assertSessionHasErrors('nombre');
+
+        $this->assertDatabaseCount('miembros', 0);
+    }
+
     // CB-M04: show() con registro activo
     public function test_cb_m04_show_muestra_miembro(): void
     {

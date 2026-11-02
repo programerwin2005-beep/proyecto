@@ -41,7 +41,7 @@
             $miembro->telefono ?: '—',
             $miembro->sexo ?: '—',
             $miembro->fecha_ingreso ? \Carbon\Carbon::parse($miembro->fecha_ingreso)->format('d/m/Y') : '—',
-            ['badge' => $miembro->estado, 'tone' => $miembro->estado === 'Activo' ? 'success' : 'muted'],
+            ['badge' => $miembro->estado?->value, 'tone' => $miembro->estado?->value === 'Activo' ? 'success' : 'muted'],
         ];
     })->all();
 @endphp

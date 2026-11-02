@@ -24,7 +24,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre Completo</label>
-            <input type="text" name="nombre" id="nombre" class="form-control" value="{{ old('nombre', $miembro->nombre) }}" required>
+            <input type="text" name="nombre" id="nombre" class="form-control" value="{{ old('nombre', $miembro->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -69,8 +69,9 @@
             <div class="form-group">
                 <label for="estado" class="form-label">Estado</label>
                 <select name="estado" id="estado" class="form-control" required>
-                    <option value="Activo" {{ old('estado', $miembro->estado) == 'Activo' ? 'selected' : '' }}>Activo</option>
-                    <option value="Inactivo" {{ old('estado', $miembro->estado) == 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
+                    @foreach(\App\Enums\EstadoMiembro::opciones() as $valor => $etiqueta)
+                        <option value="{{ $valor }}" {{ old('estado', $miembro->estado?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>

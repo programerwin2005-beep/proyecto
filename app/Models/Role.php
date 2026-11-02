@@ -21,7 +21,10 @@ class Role extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->withPivot('deleted_at')
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function permisos(): HasMany

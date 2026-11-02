@@ -33,10 +33,10 @@
                         <td>{{ $miembro->email ?? 'N/A' }}</td>
                         <td>{{ $miembro->telefono ?? 'N/A' }}</td>
                         <td>
-                            @if($miembro->estado == 'Activo')
+                            @if($miembro->estado?->value === 'Activo')
                                 <span class="badge badge-active">Activo</span>
                             @else
-                                <span class="badge badge-inactive">{{ $miembro->estado }}</span>
+                                <span class="badge badge-inactive">{{ $miembro->estado?->value }}</span>
                             @endif
                         </td>
                         <td>{{ \Carbon\Carbon::parse($miembro->fecha_ingreso)->format('d/m/Y') }}</td>

@@ -49,7 +49,7 @@
 
         <div class="form-group">
             <label for="responsable" class="form-label">Responsable *</label>
-            <input id="responsable" type="text" name="responsable" class="form-control" value="{{ old('responsable') }}" required>
+            <input id="responsable" type="text" name="responsable" class="form-control" value="{{ old('responsable') }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">

@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\MetodoPago;
+use App\Enums\TipoIngreso;
+use App\Models\CategoriaFinanciera;
 use App\Models\Ingreso;
 use App\Models\Inscripcion;
 use App\Models\PagoCurso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PagoCursoController extends Controller
 {
@@ -31,7 +35,7 @@ class PagoCursoController extends Controller
         $validated = $request->validate([
             'monto' => ['required', 'numeric', 'min:0.01', 'max:'.$inscripcion->saldo_pendiente],
             'fecha_pago' => ['required', 'date'],
-            'metodo_pago' => ['required', 'string', 'in:Efectivo,Transferencia,Tarjeta'],
+            'metodo_pago' => ['required', Rule::enum(MetodoPago::class)],
             'comprobante' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -42,9 +46,17 @@ class PagoCursoController extends Controller
 
             // El pago aparece automáticamente en Ingresos.
             // Opción A: no se copian monto, fecha ni método; se leen del pago con COALESCE.
-            $pago->ingreso()->create([
-                'tipo' => 'Inscripción Curso: '.$inscripcion->curso->nombre,
-            ]);
+            // Si ya existiera un ingreso eliminado para este pago, se restaura.
+            Ingreso::crearORestaurar(
+                ['pago_curso_id' => $pago->id],
+                [
+                    'tipo' => TipoIngreso::Inscripcion,
+                    'categoria_id' => CategoriaFinanciera::idPara(
+                        TipoIngreso::Inscripcion->value,
+                        CategoriaFinanciera::NATURALEZA_INGRESO
+                    ),
+                ]
+            );
         });
 
         return redirect()->route('inscripciones.gestion', $inscripcion->curso_id)
@@ -64,5 +76,4 @@ class PagoCursoController extends Controller
         return redirect()->route('inscripciones.gestion', $cursoId)
             ->with('success', 'Pago eliminado lógicamente.');
     }
-
 }

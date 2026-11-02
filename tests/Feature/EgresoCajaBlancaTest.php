@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\EgresoController;
 use App\Models\Cargo;
+use App\Models\Contrato;
 use App\Models\Egreso;
 use App\Models\Ingreso;
 use App\Models\LiderIglesia;
+use App\Models\Miembro;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -146,6 +148,37 @@ class EgresoCajaBlancaTest extends TestCase
                 'responsable' => 'Nadie',
             ]))
             ->assertSessionHasErrors(['tipo_egreso', 'responsable']);
+
+        $this->assertDatabaseCount('egresos', 0);
+    }
+
+    // CB-E03d: un egreso no puede asociarse a contrato y líder a la vez.
+    public function test_cb_e03d_store_rechaza_contrato_y_lider_simultaneos(): void
+    {
+        $this->ingreso(1000);
+
+        $miembro = Miembro::create([
+            'nombre' => 'Trabajador Contrato',
+            'fecha_ingreso' => now()->subYear()->toDateString(),
+            'estado' => 'Activo',
+        ]);
+
+        $contrato = Contrato::create([
+            'id_miembro' => $miembro->id,
+            'tipo_compensacion' => 'Salario',
+            'salario' => 500,
+            'fecha_inicio' => now()->subYear()->toDateString(),
+            'activo' => true,
+        ]);
+
+        $lider = LiderIglesia::where('nombre', self::RESPONSABLE)->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->post(route('egresos.store'), $this->datos([
+                'id_contrato' => $contrato->id,
+                'id_lider_iglesia' => $lider->id,
+            ]))
+            ->assertSessionHasErrors('id_contrato');
 
         $this->assertDatabaseCount('egresos', 0);
     }

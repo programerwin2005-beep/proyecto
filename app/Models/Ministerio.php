@@ -31,8 +31,9 @@ class Ministerio extends Model
     public function miembros(): BelongsToMany
     {
         return $this->belongsToMany(Miembro::class, 'miembro_ministerio')
-            ->withPivot(['fecha_inicio', 'fecha_fin'])
-            ->withTimestamps();
+            ->withPivot(['fecha_inicio', 'fecha_fin', 'deleted_at'])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function actividades(): HasMany

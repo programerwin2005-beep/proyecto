@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoInscripcion;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\PagoCurso;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class InscripcionController extends Controller
 {
@@ -60,32 +62,40 @@ class InscripcionController extends Controller
             'fecha_inscripcion' => ['required', 'date'],
         ]);
 
-        $existente = Inscripcion::withTrashed()
-            ->where('miembro_id', $validated['miembro_id'])
-            ->where('curso_id', $curso->id)
-            ->first();
+        $existente = Inscripcion::buscarPorClaveUnica([
+            'miembro_id' => $validated['miembro_id'],
+            'curso_id' => $curso->id,
+        ]);
 
-        if ($existente) {
-            $mensaje = $existente->trashed()
-                ? 'Ya existe una inscripción eliminada para este miembro en este curso.'
-                : 'El miembro ya está inscrito en este curso.';
-
-            return back()->with('error', $mensaje);
+        if ($existente && ! $existente->trashed()) {
+            return back()->with('error', 'El miembro ya está inscrito en este curso.');
         }
 
+        // El cupo solo cuenta inscripciones activas. Al restaurar una
+        // inscripción eliminada también se ocupa una vacante.
         $inscritos = Inscripcion::where('curso_id', $curso->id)->count();
 
         if ($inscritos >= $curso->cupo_max) {
             return back()->with('error', 'El curso alcanzó su cupo máximo de '.$curso->cupo_max.' inscritos.');
         }
 
-        Inscripcion::create($validated + [
-            'curso_id' => $curso->id,
-            'estado' => 'Activo',
-        ]);
+        Inscripcion::crearORestaurar(
+            [
+                'miembro_id' => $validated['miembro_id'],
+                'curso_id' => $curso->id,
+            ],
+            [
+                'fecha_inscripcion' => $validated['fecha_inscripcion'],
+                'estado' => 'Activo',
+            ]
+        );
+
+        $mensaje = $existente
+            ? 'Inscripción reactivada con éxito.'
+            : 'Miembro inscrito con éxito.';
 
         return redirect()->route('inscripciones.gestion', $curso->id)
-            ->with('success', 'Miembro inscrito con éxito.');
+            ->with('success', $mensaje);
     }
 
     public function edit($id)
@@ -103,7 +113,7 @@ class InscripcionController extends Controller
 
         $validated = $request->validate([
             'fecha_inscripcion' => ['required', 'date'],
-            'estado' => ['required', 'string', 'max:50', 'in:Activo,Retirado,Completado'],
+            'estado' => ['required', Rule::enum(EstadoInscripcion::class)],
         ]);
 
         $inscripcion->update($validated);
@@ -121,5 +131,4 @@ class InscripcionController extends Controller
         return redirect()->route('inscripciones.gestion', $cursoId)
             ->with('success', 'Inscripción eliminada lógicamente.');
     }
-
 }

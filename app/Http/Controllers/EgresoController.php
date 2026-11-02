@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\EgresoRequest;
+use App\Models\CategoriaFinanciera;
 use App\Models\Contrato;
 use App\Models\Egreso;
 use App\Models\Ingreso;
@@ -53,7 +54,7 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        Egreso::create($request->validated());
+        Egreso::create($this->conCategoria($request->validated()));
 
         return redirect()->route('egresos.index')->with('success', 'Egreso registrado con éxito.');
     }
@@ -85,9 +86,27 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        $egreso->update($request->validated());
+        $egreso->update($this->conCategoria($request->validated()));
 
         return redirect()->route('egresos.index')->with('success', 'Egreso actualizado con éxito.');
+    }
+
+    /**
+     * Completa `categoria_id` a partir del tipo cuando el formulario no lo envía.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array<string, mixed>
+     */
+    private function conCategoria(array $datos): array
+    {
+        if (empty($datos['categoria_id']) && ! empty($datos['tipo_egreso'])) {
+            $datos['categoria_id'] = CategoriaFinanciera::idPara(
+                $datos['tipo_egreso'],
+                CategoriaFinanciera::NATURALEZA_EGRESO
+            );
+        }
+
+        return $datos;
     }
 
     public function destroy($id)
@@ -97,5 +116,4 @@ class EgresoController extends Controller
 
         return redirect()->route('egresos.index')->with('success', 'Egreso eliminado lógicamente.');
     }
-
 }

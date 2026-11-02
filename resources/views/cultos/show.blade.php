@@ -25,7 +25,7 @@
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Día</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $culto->dia_semana }}</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $culto->dia_semana?->value }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Hora</span>
@@ -53,8 +53,8 @@
 
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($ingreso->fecha)->format('d/m/Y') }}</td>
-                        <td>{{ $ingreso->tipo }}</td>
-                        <td>{{ $ingreso->metodo_pago }}</td>
+                        <td>{{ $ingreso->tipo?->value }}</td>
+                        <td>{{ $ingreso->metodo_pago?->value }}</td>
                         <td style="font-weight: 600;">Bs {{ number_format($ingreso->monto_total, 2) }}</td>
                     </tr>
                 @empty

@@ -80,11 +80,11 @@
                         <td>
                             @if($asist)
                                 <span class="badge
-                                    @if($asist->estado == 'Presente') badge-active
-                                    @elseif($asist->estado == 'Ausente') badge-inactive
-                                    @elseif($asist->estado == 'Tardanza') badge-warning
+                                    @if($asist->estado?->value === 'Presente') badge-active
+                                    @elseif($asist->estado?->value === 'Ausente') badge-inactive
+                                    @elseif($asist->estado?->value === 'Tardanza') badge-warning
                                     @else badge-info
-                                    @endif">{{ $asist->estado }}</span>
+                                    @endif">{{ $asist->estado?->value }}</span>
                             @else
                                 @if($sesionPasada)
                                     <span class="badge badge-inactive">Sin registrar</span>

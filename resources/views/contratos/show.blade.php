@@ -26,14 +26,14 @@
                 'Por vencer', 'Futuro' => 'badge-warning',
                 default => 'badge-inactive',
             };
-            $tipoBadge = match($contrato->tipo_compensacion) {
+            $tipoBadge = match($contrato->tipo_compensacion?->value) {
                 'Salario' => 'badge-active',
                 'Bono' => 'badge-info',
                 'Beneficios' => 'badge-warning',
                 'Voluntario' => 'badge-inactive',
             };
         ?>
-        <span class="badge {{ $tipoBadge }}">{{ $contrato->tipo_compensacion }}</span>
+        <span class="badge {{ $tipoBadge }}">{{ $contrato->tipo_compensacion?->value }}</span>
         <span class="badge {{ $badgeClase }}">{{ $contrato->vigencia }}</span>
     </div>
 
@@ -86,7 +86,7 @@
 
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($egreso->fecha)->format('d/m/Y') }}</td>
-                        <td>{{ $egreso->tipo_egreso }}</td>
+                        <td>{{ $egreso->tipo_egreso?->value }}</td>
                         <td>{{ $egreso->descripcion ?? 'N/A' }}</td>
                         <td>{{ $egreso->responsable }}</td>
                         <td>{{ $egreso->comprobante ?? 'N/A' }}</td>

@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EstadoMiembro;
+use App\Rules\SoloLetras;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class MiembroRequest extends FormRequest
 {
@@ -17,14 +20,14 @@ class MiembroRequest extends FormRequest
         $miembroId = $miembroId !== null ? (int) $miembroId : null;
 
         return [
-            'nombre' => 'required|string|max:255|unique:miembros,nombre,'.$miembroId,
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras, 'unique:miembros,nombre,'.$miembroId],
             'email' => 'nullable|email|unique:miembros,email,'.$miembroId,
             'telefono' => 'nullable|string|max:8|regex:/^[0-9 ]*$/',
             'direccion' => 'nullable|string|max:255',
             'f_nacimiento' => 'nullable|date|before_or_equal:'.now()->subYears(13)->toDateString(),
             'sexo' => 'nullable|string|in:Masculino,Femenino',
             'fecha_ingreso' => 'required|date',
-            'estado' => 'required|string|in:Activo,Inactivo',
+            'estado' => ['required', Rule::enum(EstadoMiembro::class)],
         ];
     }
 

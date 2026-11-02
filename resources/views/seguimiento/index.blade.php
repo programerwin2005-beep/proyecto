@@ -30,7 +30,7 @@
                 @forelse($seguimientos as $seguimiento)
 
                     <?php
-                        $estadoBadge = match($seguimiento->estado) {
+                        $estadoBadge = match($seguimiento->estado?->value) {
                             'Completado' => 'badge-active',
                             'En Progreso' => 'badge-warning',
                             default => 'badge-inactive',
@@ -41,7 +41,7 @@
                         <td>{{ \Carbon\Carbon::parse($seguimiento->fecha_registro)->format('d/m/Y') }}</td>
                         <td>{{ $seguimiento->responsable }}</td>
                         <td><span class="badge badge-info">{{ $seguimiento->porcentaje_avance }}%</span></td>
-                        <td><span class="badge {{ $estadoBadge }}">{{ $seguimiento->estado }}</span></td>
+                        <td><span class="badge {{ $estadoBadge }}">{{ $seguimiento->estado?->value }}</span></td>
                         <td>{{ Str::limit($seguimiento->observacion, 50) ?: 'N/A' }}</td>
                         <td>
                             <div class="action-buttons">

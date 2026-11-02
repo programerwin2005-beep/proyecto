@@ -50,15 +50,15 @@
 
         <div class="form-group">
             <label for="responsable" class="form-label">Responsable *</label>
-            <input id="responsable" type="text" name="responsable" class="form-control" value="{{ old('responsable', $seguimiento->responsable) }}" required>
+            <input id="responsable" type="text" name="responsable" class="form-control" value="{{ old('responsable', $seguimiento->responsable) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">
             <label for="estado" class="form-label">Estado *</label>
             <select id="estado" name="estado" class="form-control" required>
-                <option value="En Progreso" {{ old('estado', $seguimiento->estado) == 'En Progreso' ? 'selected' : '' }}>En Progreso</option>
-                <option value="Completado" {{ old('estado', $seguimiento->estado) == 'Completado' ? 'selected' : '' }}>Completado</option>
-                <option value="Detenido" {{ old('estado', $seguimiento->estado) == 'Detenido' ? 'selected' : '' }}>Detenido</option>
+                @foreach(\App\Enums\EstadoSeguimiento::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" {{ old('estado', $seguimiento->estado?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                @endforeach
             </select>
         </div>
 

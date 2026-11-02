@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\MetodoPago;
+use App\Enums\TipoIngreso;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class IngresoRequest extends FormRequest
 {
@@ -16,10 +19,11 @@ class IngresoRequest extends FormRequest
         return [
             'id_actividad' => 'nullable|exists:actividades,id',
             'id_culto' => 'nullable|exists:cultos,id',
+            'categoria_id' => 'nullable|exists:categorias_financieras,id',
             'monto_total' => 'required|numeric|min:0',
             'fecha' => 'required|date',
-            'tipo' => 'required|string|in:Diezmo,Ofrenda,Donación,Inscripción Curso',
-            'metodo_pago' => 'required|string|in:Efectivo,Transferencia,Tarjeta',
+            'tipo' => ['required', Rule::enum(TipoIngreso::class)],
+            'metodo_pago' => ['required', Rule::enum(MetodoPago::class)],
         ];
     }
 }

@@ -8,7 +8,7 @@
         <h2 style="font-weight: 700; color: var(--text-primary);">Detalle del Miembro</h2>
         @if($miembro->trashed())
             <span class="badge badge-inactive">Eliminado</span>
-        @elseif($miembro->estado == 'Activo')
+        @elseif($miembro->estado?->value === 'Activo')
             <span class="badge badge-active">Activo</span>
         @else
             <span class="badge badge-inactive">Inactivo</span>
@@ -57,7 +57,7 @@
 
         <div class="form-group">
             <label class="form-label" for="f_Estado">Estado</label>
-            <div style="color: var(--text-primary);">{{ $miembro->estado }}</div>
+            <div style="color: var(--text-primary);">{{ $miembro->estado?->value }}</div>
         </div>
     </div>
 

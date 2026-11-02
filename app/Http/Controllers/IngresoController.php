@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\IngresoRequest;
 use App\Models\Actividad;
+use App\Models\CategoriaFinanciera;
 use App\Models\Culto;
 use App\Models\Egreso;
 use App\Models\Ingreso;
@@ -33,7 +34,7 @@ class IngresoController extends Controller
 
     public function store(IngresoRequest $request)
     {
-        Ingreso::create($request->validated());
+        Ingreso::create($this->conCategoria($request->validated()));
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso registrado con éxito.');
     }
@@ -69,9 +70,27 @@ class IngresoController extends Controller
                 ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de inscripciones.');
         }
 
-        $ingreso->update($request->validated());
+        $ingreso->update($this->conCategoria($request->validated()));
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso actualizado con éxito.');
+    }
+
+    /**
+     * Completa `categoria_id` a partir del tipo cuando el formulario no lo envía.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array<string, mixed>
+     */
+    private function conCategoria(array $datos): array
+    {
+        if (empty($datos['categoria_id']) && ! empty($datos['tipo'])) {
+            $datos['categoria_id'] = CategoriaFinanciera::idPara(
+                $datos['tipo'],
+                CategoriaFinanciera::NATURALEZA_INGRESO
+            );
+        }
+
+        return $datos;
     }
 
     public function destroy($id)
@@ -87,5 +106,4 @@ class IngresoController extends Controller
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso eliminado lógicamente.');
     }
-
 }

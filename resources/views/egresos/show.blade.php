@@ -27,7 +27,7 @@
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Tipo de Egreso</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $egreso->tipo_egreso }}</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $egreso->tipo_egreso?->value }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Responsable</span>
@@ -36,6 +36,10 @@
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Contrato Asociado</span>
             <span style="font-weight: 600; color: var(--text-primary);">{{ $egreso->contrato?->miembro?->nombre ?? 'Ninguno' }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
+            <span style="color: var(--text-secondary);">Pago Directo a Líder</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $egreso->lider?->nombre ?? 'Ninguno' }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Comprobante / Recibo</span>

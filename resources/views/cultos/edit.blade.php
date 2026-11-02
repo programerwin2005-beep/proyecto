@@ -22,15 +22,15 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre del Culto</label>
-            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $culto->nombre) }}" required>
+            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $culto->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">
             <label for="dia_semana" class="form-label">Día de la Semana</label>
             <select id="dia_semana" name="dia_semana" class="form-control" required>
                 <option value="">Seleccione un día...</option>
-                @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $dia)
-                    <option value="{{ $dia }}" {{ old('dia_semana', $culto->dia_semana) == $dia ? 'selected' : '' }}>{{ $dia }}</option>
+                @foreach(\App\Enums\DiaSemana::opciones() as $dia)
+                    <option value="{{ $dia }}" {{ old('dia_semana', $culto->dia_semana?->value) === $dia ? 'selected' : '' }}>{{ $dia }}</option>
                 @endforeach
             </select>
         </div>

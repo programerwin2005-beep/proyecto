@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\DiaSemana;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +23,13 @@ class Culto extends Model
         'descripcion',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'dia_semana' => EnumTolerante::class.':'.DiaSemana::class,
+        ];
+    }
+
     public function liderIglesia(): BelongsTo
     {
         return $this->belongsTo(LiderIglesia::class, 'id_lider_iglesia');
@@ -29,5 +38,10 @@ class Culto extends Model
     public function ingresos(): HasMany
     {
         return $this->hasMany(Ingreso::class, 'id_culto');
+    }
+
+    public function asistencias(): HasMany
+    {
+        return $this->hasMany(AsistenciaCulto::class, 'culto_id');
     }
 }

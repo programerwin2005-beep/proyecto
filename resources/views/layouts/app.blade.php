@@ -397,6 +397,11 @@
             localStorage.setItem('actua_theme', theme);
         }
 
+        // Limpia en tiempo real los campos que solo admiten letras y espacios.
+        function soloLetras(input) {
+            input.value = input.value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, '');
+        }
+
         function togglePasswordVisibility(id) {
             const input = document.getElementById(id);
             const button = input.nextElementSibling;

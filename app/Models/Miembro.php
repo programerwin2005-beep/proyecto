@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\EstadoMiembro;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +27,13 @@ class Miembro extends Model
         'estado',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'estado' => EnumTolerante::class.':'.EstadoMiembro::class,
+        ];
+    }
+
     public function docente(): HasOne
     {
         return $this->hasOne(Docente::class, 'id_miembro');
@@ -38,15 +47,17 @@ class Miembro extends Model
     public function ministerios(): BelongsToMany
     {
         return $this->belongsToMany(Ministerio::class, 'miembro_ministerio')
-            ->withPivot(['fecha_inicio', 'fecha_fin'])
-            ->withTimestamps();
+            ->withPivot(['fecha_inicio', 'fecha_fin', 'deleted_at'])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function cursos(): BelongsToMany
     {
         return $this->belongsToMany(Curso::class, 'inscripciones')
-            ->withPivot(['fecha_inscripcion', 'estado'])
-            ->withTimestamps();
+            ->withPivot(['fecha_inscripcion', 'estado', 'deleted_at'])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function inscripciones(): HasMany
@@ -57,7 +68,13 @@ class Miembro extends Model
     public function sesiones(): BelongsToMany
     {
         return $this->belongsToMany(Sesion::class, 'asistencias_sesion')
-            ->withPivot(['estado', 'observacion'])
-            ->withTimestamps();
+            ->withPivot(['estado', 'observacion', 'deleted_at'])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
+    }
+
+    public function asistenciasCulto(): HasMany
+    {
+        return $this->hasMany(AsistenciaCulto::class, 'miembro_id');
     }
 }

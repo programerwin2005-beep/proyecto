@@ -71,7 +71,7 @@
                             'Por vencer', 'Futuro' => 'badge-warning',
                             default => 'badge-inactive',
                         };
-                        $tipoBadge = match($contrato->tipo_compensacion) {
+                        $tipoBadge = match($contrato->tipo_compensacion?->value) {
                             'Salario' => 'badge-active',
                             'Bono' => 'badge-info',
                             'Beneficios' => 'badge-warning',
@@ -82,7 +82,7 @@
                         <td>{{ $contrato->miembro->nombre ?? 'N/A' }}</td>
                         <td>{{ $contrato->lider?->nombre ?? 'N/A' }}</td>
                         <td>{{ $contrato->lider?->cargo?->nombre ?? 'Sin cargo' }}</td>
-                        <td><span class="badge {{ $tipoBadge }}">{{ $contrato->tipo_compensacion }}</span></td>
+                        <td><span class="badge {{ $tipoBadge }}">{{ $contrato->tipo_compensacion?->value }}</span></td>
                         <td style="font-weight: 600;">Bs {{ number_format($contrato->salario, 2) }}</td>
                         <td>{{ \Carbon\Carbon::parse($contrato->fecha_inicio)->format('d/m/Y') }}</td>
                         <td>{{ $contrato->fecha_fin ? \Carbon\Carbon::parse($contrato->fecha_fin)->format('d/m/Y') : 'Indefinido' }}</td>

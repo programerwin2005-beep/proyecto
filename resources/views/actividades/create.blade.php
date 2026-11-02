@@ -23,7 +23,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre de la Actividad</label>
-            <input type="text" name="nombre" id="nombre" class="form-control" value="{{ old('nombre') }}" required>
+            <input type="text" name="nombre" id="nombre" class="form-control" value="{{ old('nombre') }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">
@@ -51,10 +51,9 @@
         <div class="form-group">
             <label for="estado" class="form-label">Estado</label>
             <select name="estado" id="estado" class="form-control" required>
-                <option value="Programado" {{ old('estado', 'Programado') == 'Programado' ? 'selected' : '' }}>Programado</option>
-                <option value="En Progreso" {{ old('estado') == 'En Progreso' ? 'selected' : '' }}>En Progreso</option>
-                <option value="Completado" {{ old('estado') == 'Completado' ? 'selected' : '' }}>Completado</option>
-                <option value="Cancelado" {{ old('estado') == 'Cancelado' ? 'selected' : '' }}>Cancelado</option>
+                @foreach(\App\Enums\EstadoActividad::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" {{ old('estado', 'Programado') === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                @endforeach
             </select>
         </div>
 

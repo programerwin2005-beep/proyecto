@@ -22,7 +22,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre del Curso</label>
-            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $curso->nombre) }}" required>
+            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $curso->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">

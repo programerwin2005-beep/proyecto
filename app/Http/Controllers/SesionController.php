@@ -90,8 +90,10 @@ class SesionController extends Controller
         ];
 
         foreach ($asistencias as $a) {
-            if (isset($resumen[$a->estado])) {
-                $resumen[$a->estado]++;
+            $estado = $a->estado?->value;
+
+            if ($estado !== null && isset($resumen[$estado])) {
+                $resumen[$estado]++;
             }
         }
 
@@ -155,7 +157,6 @@ class SesionController extends Controller
 
         return redirect()->route('sesiones.index')->with('success', 'Sesión eliminada lógicamente.');
     }
-
 
     public function generar(Curso $curso)
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoAsistencia;
 use App\Models\Asistencia;
 use App\Models\Curso;
 use App\Models\Inscripcion;
@@ -70,7 +71,7 @@ class AsistenciaController extends Controller
                     'user_id' => auth()->id(),
                 ];
 
-                Asistencia::updateOrCreate(
+                Asistencia::crearORestaurar(
                     ['sesion_id' => $sesion->id, 'miembro_id' => $miembroId],
                     $valores
                 );
@@ -91,7 +92,7 @@ class AsistenciaController extends Controller
 
         DB::transaction(function () use ($inscritos, $sesion) {
             foreach ($inscritos as $miembroId) {
-                Asistencia::updateOrCreate(
+                Asistencia::crearORestaurar(
                     ['sesion_id' => $sesion->id, 'miembro_id' => $miembroId],
                     ['estado' => 'Presente', 'user_id' => auth()->id()]
                 );
@@ -144,10 +145,10 @@ class AsistenciaController extends Controller
                     ->keyBy('miembro_id');
 
                 $resumen = [
-                    'Presente' => $asistencias->where('estado', 'Presente')->count(),
-                    'Ausente' => $asistencias->where('estado', 'Ausente')->count(),
-                    'Tardanza' => $asistencias->where('estado', 'Tardanza')->count(),
-                    'Justificado' => $asistencias->where('estado', 'Justificado')->count(),
+                    'Presente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Presente)->count(),
+                    'Ausente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Ausente)->count(),
+                    'Tardanza' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Tardanza)->count(),
+                    'Justificado' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Justificado)->count(),
                 ];
             }
         }
@@ -184,13 +185,17 @@ class AsistenciaController extends Controller
         $miembro = Miembro::findOrFail($miembroId);
 
         $resumenPorCurso = $asistencias->groupBy(fn ($a) => $a->sesion?->curso?->nombre ?? 'Sin curso')
-            ->map(fn ($lista) => [
-                'total' => $lista->count(),
-                'presentes' => $lista->where('estado', 'Presente')->count(),
-                'porcentaje' => $lista->count() > 0
-                    ? round(($lista->where('estado', 'Presente')->count() / $lista->count()) * 100, 1)
-                    : 0,
-            ]);
+            ->map(function ($lista) {
+                $presentes = $lista->filter(fn ($a) => $a->estado === EstadoAsistencia::Presente)->count();
+
+                return [
+                    'total' => $lista->count(),
+                    'presentes' => $presentes,
+                    'porcentaje' => $lista->count() > 0
+                        ? round(($presentes / $lista->count()) * 100, 1)
+                        : 0,
+                ];
+            });
 
         return view('asistencia.historial', compact('miembro', 'asistencias', 'resumenPorCurso'));
     }

@@ -6,6 +6,8 @@ use App\Models\Docente;
 use App\Models\Miembro;
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\SoloLetras;
+use App\Support\VinculoPivote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -35,26 +37,31 @@ class DocenteController extends Controller
                 'exists:miembros,id',
                 Rule::unique('docentes', 'id_miembro')->whereNull('deleted_at'),
             ],
-            'especialidad' => 'required|string|max:255',
-            'titulo' => 'nullable|string|max:255',
+            'especialidad' => ['required', 'string', 'max:255', new SoloLetras],
+            'titulo' => ['nullable', 'string', 'max:255', new SoloLetras],
             'activo' => 'boolean',
         ]);
 
-        $docente = Docente::withTrashed()
-            ->where('id_miembro', $validated['id_miembro'])
-            ->first();
+        $existente = Docente::buscarPorClaveUnica(['id_miembro' => $validated['id_miembro']]);
 
-        if ($docente) {
-            $mensaje = $docente->trashed()
-                ? 'Ya existe un docente eliminado para este miembro.'
-                : 'El miembro ya está registrado como docente.';
-
-            return back()->with('error', $mensaje)->withInput();
+        if ($existente && ! $existente->trashed()) {
+            return back()->with('error', 'El miembro ya está registrado como docente.')->withInput();
         }
 
-        Docente::create($validated);
+        Docente::crearORestaurar(
+            ['id_miembro' => $validated['id_miembro']],
+            [
+                'especialidad' => $validated['especialidad'],
+                'titulo' => $validated['titulo'] ?? null,
+                'activo' => $validated['activo'] ?? true,
+            ]
+        );
 
-        return redirect()->route('docentes.index')->with('success', 'Docente registrado con éxito.');
+        $mensaje = $existente
+            ? 'Docente reactivado con éxito.'
+            : 'Docente registrado con éxito.';
+
+        return redirect()->route('docentes.index')->with('success', $mensaje);
     }
 
     public function show($id)
@@ -77,9 +84,15 @@ class DocenteController extends Controller
         $docente = Docente::withTrashed()->findOrFail($id);
 
         $validated = $request->validate([
-            'id_miembro' => 'required|exists:miembros,id|unique:docentes,id_miembro,'.$docente->id,
-            'especialidad' => 'required|string|max:255',
-            'titulo' => 'nullable|string|max:255',
+            'id_miembro' => [
+                'required',
+                'exists:miembros,id',
+                Rule::unique('docentes', 'id_miembro')
+                    ->whereNull('deleted_at')
+                    ->ignore($docente->id),
+            ],
+            'especialidad' => ['required', 'string', 'max:255', new SoloLetras],
+            'titulo' => ['nullable', 'string', 'max:255', new SoloLetras],
             'activo' => 'boolean',
         ]);
 
@@ -126,7 +139,7 @@ class DocenteController extends Controller
             ]);
 
             $role = Role::where('nombre', 'Docente')->firstOrFail();
-            $user->roles()->attach($role->id);
+            VinculoPivote::adjuntar($user->roles(), $role->id);
 
             $docente->update(['user_id' => $user->id]);
         });
@@ -146,7 +159,7 @@ class DocenteController extends Controller
                 $role = Role::where('nombre', 'Docente')->first();
 
                 if ($role) {
-                    $docente->user->roles()->detach($role->id);
+                    VinculoPivote::desvincular($docente->user->roles(), $role->id);
                 }
 
                 if ($docente->user->roles()->count() === 0) {
@@ -159,5 +172,4 @@ class DocenteController extends Controller
 
         return redirect()->route('docentes.index')->with('success', 'Docente eliminado lógicamente.');
     }
-
 }

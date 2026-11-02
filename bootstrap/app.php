@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditaAcciones;
 use App\Http\Middleware\CheckPermiso;
 use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\RoleMiddleware;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             CheckPermiso::class,
+            AuditaAcciones::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

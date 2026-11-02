@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TieneRegistroUnico;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Docente extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, TieneRegistroUnico;
 
     protected $table = 'docentes';
 
@@ -33,6 +34,9 @@ class Docente extends Model
 
     public function cursos(): BelongsToMany
     {
-        return $this->belongsToMany(Curso::class, 'docente_curso')->withTimestamps();
+        return $this->belongsToMany(Curso::class, 'docente_curso')
+            ->withPivot('deleted_at')
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 }

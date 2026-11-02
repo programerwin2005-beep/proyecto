@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\EstadoInscripcion;
+use App\Models\Concerns\TieneRegistroUnico;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Inscripcion extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, TieneRegistroUnico;
 
     protected $table = 'inscripciones';
 
@@ -19,6 +22,13 @@ class Inscripcion extends Model
         'fecha_inscripcion',
         'estado',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'estado' => EnumTolerante::class.':'.EstadoInscripcion::class,
+        ];
+    }
 
     public function miembro(): BelongsTo
     {

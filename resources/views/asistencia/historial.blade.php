@@ -7,7 +7,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
             <h2 style="font-weight: 700; color: var(--text-primary);">Historial de Asistencia</h2>
-            <div style="color: var(--text-secondary);">{{ $miembro->nombre }} <span class="badge badge-info">{{ $miembro->estado }}</span></div>
+            <div style="color: var(--text-secondary);">{{ $miembro->nombre }} <span class="badge badge-info">{{ $miembro->estado?->value }}</span></div>
         </div>
         <a href="javascript:history.back()" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); text-decoration: none;">← Volver</a>
     </div>
@@ -57,11 +57,11 @@
                         <td>{{ $asistencia->sesion?->tema ?? 'N/A' }}</td>
                         <td>
                             <span class="badge
-                                @if($asistencia->estado == 'Presente') badge-active
-                                @elseif($asistencia->estado == 'Ausente') badge-inactive
-                                @elseif($asistencia->estado == 'Tardanza') badge-warning
+                                @if($asistencia->estado?->value === 'Presente') badge-active
+                                @elseif($asistencia->estado?->value === 'Ausente') badge-inactive
+                                @elseif($asistencia->estado?->value === 'Tardanza') badge-warning
                                 @else badge-info
-                                @endif">{{ $asistencia->estado }}</span>
+                                @endif">{{ $asistencia->estado?->value }}</span>
                         </td>
                         <td>{{ $asistencia->observacion ?? 'N/A' }}</td>
                     </tr>

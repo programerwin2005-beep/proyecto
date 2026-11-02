@@ -46,8 +46,8 @@
 
                     <tr style="@if($ingreso->trashed()) opacity: 0.5; @endif">
                         <td>{{ \Carbon\Carbon::parse($ingreso->fecha)->format('d/m/Y') }}</td>
-                        <td>{{ $ingreso->tipo }}</td>
-                        <td>{{ $ingreso->metodo_pago }}</td>
+                        <td>{{ $ingreso->tipo?->value }}</td>
+                        <td>{{ $ingreso->metodo_pago?->value }}</td>
                         <td style="font-weight: 600; color: var(--success);">Bs {{ number_format($ingreso->monto_total, 2) }}</td>
                         <td>{{ $ingreso->actividad->nombre ?? 'N/A' }}</td>
                         <td>{{ $ingreso->culto->nombre ?? 'N/A' }}</td>

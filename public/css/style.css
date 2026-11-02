@@ -2335,6 +2335,25 @@ body.report-preview-mode .report-document {
     white-space: nowrap;
 }
 
+/* ---------- Indicadores clave y alertas ---------- */
+.dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.dash-kpi-grid .dash-att__value {
+    font-size: 1.1rem;
+    overflow-wrap: anywhere;
+}
+
+.dash-kpi-grid .dash-att__label {
+    white-space: normal;
+}
+
+.dash-att__item--info { --att-accent: #3b82f6; }
+
 /* ---------- Desglose por tipo ---------- */
 .dash-breakdown {
     display: flex;

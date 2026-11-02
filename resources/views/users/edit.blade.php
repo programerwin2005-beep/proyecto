@@ -24,7 +24,7 @@
 
         <div class="form-group">
             <label for="name" class="form-label">Nombre *</label>
-            <input id="name" type="text" name="name" class="form-control" value="{{ old('name', $user->name) }}" required autocomplete="name">
+            <input id="name" type="text" name="name" class="form-control" value="{{ old('name', $user->name) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required autocomplete="name">
         </div>
 
         <div class="form-group">

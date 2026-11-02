@@ -45,7 +45,7 @@
 
                     <tr style="@if($egreso->trashed()) opacity: 0.5; @endif">
                         <td>{{ \Carbon\Carbon::parse($egreso->fecha)->format('d/m/Y') }}</td>
-                        <td>{{ $egreso->tipo_egreso }}</td>
+                        <td>{{ $egreso->tipo_egreso?->value }}</td>
                         <td style="font-weight: 600; color: var(--error);">Bs {{ number_format($egreso->monto, 2) }}</td>
                         <td>{{ $egreso->responsable }}</td>
                         <td>{{ $egreso->comprobante ?? 'N/A' }}</td>

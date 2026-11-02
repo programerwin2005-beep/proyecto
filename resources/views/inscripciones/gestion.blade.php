@@ -112,12 +112,12 @@
                         </td>
                         <td>{{ \Carbon\Carbon::parse($inscripcion->fecha_inscripcion)->format('d/m/Y') }}</td>
                         <td>
-                            @if($inscripcion->estado == 'Activo')
+                            @if($inscripcion->estado?->value === 'Activo')
                                 <span class="badge badge-active">Activo</span>
-                            @elseif($inscripcion->estado == 'Completado')
-                                <span class="badge badge-info">{{ $inscripcion->estado }}</span>
+                            @elseif($inscripcion->estado?->value === 'Completado')
+                                <span class="badge badge-info">{{ $inscripcion->estado?->value }}</span>
                             @else
-                                <span class="badge badge-inactive">{{ $inscripcion->estado }}</span>
+                                <span class="badge badge-inactive">{{ $inscripcion->estado?->value }}</span>
                             @endif
                         </td>
                         @if($curso->tiene_pago)

@@ -63,7 +63,7 @@
             <select name="tipo_compensacion" id="tipo_compensacion" class="form-control" required onchange="toggleSalario()">
                 @foreach($tiposCompensacion as $valor => $etiqueta)
 
-                    <option value="{{ $valor }}" {{ old('tipo_compensacion', $contrato->tipo_compensacion) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                    <option value="{{ $valor }}" {{ old('tipo_compensacion', $contrato->tipo_compensacion?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
                 
 @endforeach
             </select>

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\SoloLetras;
+use App\Support\VinculoPivote;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
@@ -23,7 +25,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255|unique:roles,nombre',
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras, 'unique:roles,nombre'],
             'descripcion' => 'nullable|string|max:500',
             'estado' => 'required|string|in:Activo,Inactivo',
             'nivel_acceso' => 'required|integer|min:1',
@@ -51,7 +53,7 @@ class RoleController extends Controller
         $role = Role::withTrashed()->findOrFail($id);
 
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255|unique:roles,nombre,'.$role->id,
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras, 'unique:roles,nombre,'.$role->id],
             'descripcion' => 'nullable|string|max:500',
             'estado' => 'required|string|in:Activo,Inactivo',
             'nivel_acceso' => 'required|integer|min:1',
@@ -74,7 +76,6 @@ class RoleController extends Controller
 
         return redirect()->route('roles.index')->with('success', 'Rol eliminado lógicamente.');
     }
-
 
     // rol_usuario view: list users and roles for assignment
     public function userRoles()
@@ -104,7 +105,7 @@ class RoleController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
-        $user->roles()->sync($request->input('roles', []));
+        VinculoPivote::sincronizar($user->roles(), $request->input('roles', []));
 
         return redirect()->route('roles.user')->with('success', 'Roles actualizados con éxito para el usuario.');
     }
@@ -112,7 +113,7 @@ class RoleController extends Controller
     public function clearUserRoles($userId)
     {
         $user = User::findOrFail($userId);
-        $user->roles()->detach();
+        VinculoPivote::desvincular($user->roles());
 
         return redirect()->route('roles.user')->with('success', 'Relación rol-usuario eliminada con éxito.');
     }

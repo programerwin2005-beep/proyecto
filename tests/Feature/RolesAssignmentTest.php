@@ -114,7 +114,7 @@ class RolesAssignmentTest extends TestCase
             ])
             ->assertRedirect(route('roles.user'));
 
-        $this->assertDatabaseMissing('role_user', [
+        $this->assertSoftDeleted('role_user', [
             'user_id' => $this->objetivo->id,
             'role_id' => $adminRole->id,
         ]);
@@ -153,7 +153,7 @@ class RolesAssignmentTest extends TestCase
             ->assertRedirect(route('roles.user'))
             ->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('role_user', [
+        $this->assertSoftDeleted('role_user', [
             'user_id' => $this->objetivo->id,
             'role_id' => $secretario->id,
         ]);

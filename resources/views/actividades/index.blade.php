@@ -34,10 +34,10 @@
                         <td>{{ \Carbon\Carbon::parse($actividad->fecha)->format('d/m/Y') }}</td>
                         <td>{{ $actividad->lugar ?? 'N/A' }}</td>
                         <td>
-                            @if($actividad->estado == 'Programado')
+                            @if($actividad->estado?->value === 'Programado')
                                 <span class="badge badge-active">Programado</span>
                             @else
-                                <span class="badge badge-inactive">{{ $actividad->estado }}</span>
+                                <span class="badge badge-inactive">{{ $actividad->estado?->value }}</span>
                             @endif
                         </td>
                         <td>

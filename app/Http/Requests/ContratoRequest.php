@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoCompensacion;
 use App\Models\Contrato;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ContratoRequest extends FormRequest
 {
@@ -33,7 +35,7 @@ class ContratoRequest extends FormRequest
                 },
             ],
             'id_lider_iglesia' => 'required|exists:lideres_iglesia,id',
-            'tipo_compensacion' => 'required|in:'.implode(',', array_keys(Contrato::tiposCompensacion())),
+            'tipo_compensacion' => ['required', Rule::enum(TipoCompensacion::class)],
             'salario' => [
                 'required_if:tipo_compensacion,Salario,Bono',
                 'nullable',

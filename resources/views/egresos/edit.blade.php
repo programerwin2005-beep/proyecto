@@ -56,11 +56,9 @@
         <div class="form-group">
             <label for="tipo_egreso" class="form-label">Tipo de Egreso</label>
             <select id="tipo_egreso" name="tipo_egreso" class="form-control" required>
-                <option value="Mantenimiento" {{ old('tipo_egreso', $egreso->tipo_egreso) == 'Mantenimiento' ? 'selected' : '' }}>Mantenimiento</option>
-                <option value="Servicios Básicos" {{ old('tipo_egreso', $egreso->tipo_egreso) == 'Servicios Básicos' ? 'selected' : '' }}>Servicios Básicos</option>
-                <option value="Salarios / Honorarios" {{ old('tipo_egreso', $egreso->tipo_egreso) == 'Salarios / Honorarios' ? 'selected' : '' }}>Salarios / Honorarios</option>
-                <option value="Ayuda Comunitaria" {{ old('tipo_egreso', $egreso->tipo_egreso) == 'Ayuda Comunitaria' ? 'selected' : '' }}>Ayuda Comunitaria</option>
-                <option value="Otros Egresos" {{ old('tipo_egreso', $egreso->tipo_egreso) == 'Otros Egresos' ? 'selected' : '' }}>Otros Egresos</option>
+                @foreach(\App\Enums\TipoEgreso::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" {{ old('tipo_egreso', $egreso->tipo_egreso?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                @endforeach
             </select>
         </div>
 
@@ -74,6 +72,19 @@
                     </option>
                 @endforeach
             </select>
+        </div>
+
+        <div class="form-group">
+            <label for="id_lider_iglesia" class="form-label">O pagar directamente a un Líder (Opcional)</label>
+            <select id="id_lider_iglesia" name="id_lider_iglesia" class="form-control">
+                <option value="">Ninguno...</option>
+                @foreach($lideres as $lider)
+                    <option value="{{ $lider->id }}" {{ old('id_lider_iglesia', $egreso->id_lider_iglesia) == $lider->id ? 'selected' : '' }}>
+                        {{ $lider->nombre }}{{ $lider->cargo ? ' - ' . $lider->cargo->nombre : '' }}
+                    </option>
+                @endforeach
+            </select>
+            <small style="color: var(--text-secondary); font-size: 12px;">Use contrato o líder directo, no ambos.</small>
         </div>
 
         <div class="form-group">
@@ -92,4 +103,21 @@
         </div>
     </form>
 </div>
+
+<script>
+    (function () {
+        const contrato = document.getElementById('id_contrato');
+        const lider = document.getElementById('id_lider_iglesia');
+
+        if (!contrato || !lider) return;
+
+        contrato.addEventListener('change', function () {
+            if (this.value !== '') lider.value = '';
+        });
+
+        lider.addEventListener('change', function () {
+            if (this.value !== '') contrato.value = '';
+        });
+    })();
+</script>
 @endsection

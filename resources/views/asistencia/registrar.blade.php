@@ -88,7 +88,7 @@
                             <td>
                                 <select name="asistencia[{{ $inscrito->miembro_id }}][estado]" aria-labelledby="col-estado" class="form-control" style="min-width: 140px;">
                                     @foreach(['Presente', 'Ausente', 'Tardanza', 'Justificado'] as $estado)
-                                        <option value="{{ $estado }}" {{ ($actual?->estado ?? 'Ausente') == $estado ? 'selected' : '' }}>{{ $estado }}</option>
+                                        <option value="{{ $estado }}" {{ ($actual?->estado?->value ?? 'Ausente') === $estado ? 'selected' : '' }}>{{ $estado }}</option>
                                     @endforeach
                                 </select>
                             </td>

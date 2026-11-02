@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\EstadoAsistencia;
+use App\Models\Concerns\TieneRegistroUnico;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Asistencia extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, TieneRegistroUnico;
 
     protected $table = 'asistencias_sesion';
 
@@ -19,6 +22,13 @@ class Asistencia extends Model
         'estado',
         'observacion',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'estado' => EnumTolerante::class.':'.EstadoAsistencia::class,
+        ];
+    }
 
     public function user(): BelongsTo
     {

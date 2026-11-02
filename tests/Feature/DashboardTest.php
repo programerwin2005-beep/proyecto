@@ -131,6 +131,17 @@ class DashboardTest extends TestCase
             ->assertSee('Sin movimientos financieros en los últimos 6 meses.');
     }
 
+    public function test_el_dashboard_carga_los_kpis_del_controlador(): void
+    {
+        $user = $this->usuarioConRol('Administrador');
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Indicadores clave')
+            ->assertSee('Alertas accionables');
+    }
+
     public function test_el_administrador_ve_todos_los_accesos_rapidos(): void
     {
         $user = $this->usuarioConRol('Administrador');

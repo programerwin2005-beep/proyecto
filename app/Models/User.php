@@ -35,13 +35,17 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class)->withTimestamps();
+        return $this->belongsToMany(Role::class)
+            ->withPivot('deleted_at')
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function docente(): HasOne

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\EstadoActividad;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +23,13 @@ class Actividad extends Model
         'descripcion',
         'estado',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'estado' => EnumTolerante::class.':'.EstadoActividad::class,
+        ];
+    }
 
     public function ministerio(): BelongsTo
     {

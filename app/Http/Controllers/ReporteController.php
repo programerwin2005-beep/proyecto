@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoAsistencia;
+use App\Enums\EstadoMiembro;
 use App\Models\Asistencia;
 use App\Models\Curso;
 use App\Models\Egreso;
@@ -39,8 +41,8 @@ class ReporteController extends Controller
 
         $totales = [
             'total' => $miembros->count(),
-            'activos' => $miembros->where('estado', 'Activo')->count(),
-            'inactivos' => $miembros->where('estado', 'Inactivo')->count(),
+            'activos' => $miembros->filter(fn ($m) => $m->estado === EstadoMiembro::Activo)->count(),
+            'inactivos' => $miembros->filter(fn ($m) => $m->estado === EstadoMiembro::Inactivo)->count(),
         ];
 
         return view('reportes.miembros', compact('miembros', 'estado', 'desde', 'hasta', 'totales'));
@@ -82,10 +84,10 @@ class ReporteController extends Controller
         $registros = $query->orderByDesc('sesion_id')->get();
 
         $resumen = [
-            'presentes' => $registros->where('estado', 'Presente')->count(),
-            'ausentes' => $registros->where('estado', 'Ausente')->count(),
-            'tardanzas' => $registros->where('estado', 'Tardanza')->count(),
-            'justificados' => $registros->where('estado', 'Justificado')->count(),
+            'presentes' => $registros->filter(fn ($a) => $a->estado === EstadoAsistencia::Presente)->count(),
+            'ausentes' => $registros->filter(fn ($a) => $a->estado === EstadoAsistencia::Ausente)->count(),
+            'tardanzas' => $registros->filter(fn ($a) => $a->estado === EstadoAsistencia::Tardanza)->count(),
+            'justificados' => $registros->filter(fn ($a) => $a->estado === EstadoAsistencia::Justificado)->count(),
         ];
 
         return view('reportes.asistencia', compact('registros', 'cursos', 'cursoId', 'desde', 'hasta', 'resumen'));
@@ -106,8 +108,12 @@ class ReporteController extends Controller
         $totalEgresos = $egresos->sum('monto');
         $balance = $totalIngresos - $totalEgresos;
 
-        $ingresosPorTipo = $ingresos->groupBy('tipo')->map(fn ($g) => $g->sum('monto_total'));
-        $egresosPorTipo = $egresos->groupBy('tipo_egreso')->map(fn ($g) => $g->sum('monto'));
+        $ingresosPorTipo = $ingresos
+            ->groupBy(fn ($i) => $i->tipo?->value ?? 'Sin clasificar')
+            ->map(fn ($g) => $g->sum('monto_total'));
+        $egresosPorTipo = $egresos
+            ->groupBy(fn ($e) => $e->tipo_egreso?->value ?? 'Sin clasificar')
+            ->map(fn ($g) => $g->sum('monto'));
 
         return view('reportes.financiero', compact(
             'ingresos',

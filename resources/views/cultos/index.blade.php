@@ -30,7 +30,7 @@
 
                     <tr style="@if($culto->trashed()) opacity: 0.5; @endif">
                         <td>{{ $culto->nombre }}</td>
-                        <td>{{ $culto->dia_semana }}</td>
+                        <td>{{ $culto->dia_semana?->value }}</td>
                         <td>{{ $culto->hora }}</td>
                         <td>{{ $culto->liderIglesia->nombre ?? 'N/A' }}</td>
                         <td>{{ $culto->descripcion ?? 'N/A' }}</td>

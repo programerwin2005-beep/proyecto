@@ -24,7 +24,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre del Rol *</label>
-            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $role->nombre) }}" required>
+            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $role->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">

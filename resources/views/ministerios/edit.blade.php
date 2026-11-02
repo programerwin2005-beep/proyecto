@@ -24,7 +24,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre del Ministerio</label>
-            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $ministerio->nombre) }}" required>
+            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $ministerio->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div class="form-group">
@@ -42,6 +42,35 @@
                     </option>
                 @endforeach
             </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Miembros del Ministerio</label>
+            <input type="hidden" name="miembros_presente" value="1">
+            <div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 14px;">
+                @forelse($miembros as $miembro)
+                    @php
+                        $marcado = in_array($miembro->id, array_map('intval', (array) $seleccionados), true);
+                        $inactivo = $miembro->estado !== \App\Enums\EstadoMiembro::Activo;
+                    @endphp
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer;">
+                        <input type="checkbox" name="miembros[]" value="{{ $miembro->id }}"
+                            {{ $marcado ? 'checked' : '' }}
+                            {{ $inactivo && ! $marcado ? 'disabled' : '' }}>
+                        <span>
+                            {{ $miembro->nombre }}
+                            @if($inactivo)
+                                <em style="color: var(--text-secondary); font-size: 12px;">(Inactivo)</em>
+                            @endif
+                        </span>
+                    </label>
+                @empty
+                    <p style="color: var(--text-secondary); margin: 0;">No hay miembros registrados.</p>
+                @endforelse
+            </div>
+            <small style="color: var(--text-secondary); font-size: 12px;">
+                La composición se guarda únicamente en el pivote miembro_ministerio. El líder se asigna aparte y no se duplica como miembro.
+            </small>
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 30px;">

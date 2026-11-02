@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\SoloLetras;
+use App\Support\VinculoPivote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -25,7 +27,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', new SoloLetras],
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:12|confirmed',
         ]);
@@ -40,7 +42,7 @@ class UserController extends Controller
         // sus roles se ajustan desde "Administrar Rol Usuario".
         $defaultRole = Role::where('nombre', 'Secretario')->first();
         if ($defaultRole) {
-            $user->roles()->attach($defaultRole->id);
+            VinculoPivote::adjuntar($user->roles(), $defaultRole->id);
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado con éxito.');
@@ -65,7 +67,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', new SoloLetras],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:12|confirmed',
         ]);
@@ -92,5 +94,4 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Usuario eliminado lógicamente.');
     }
-
 }

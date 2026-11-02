@@ -45,10 +45,9 @@
         <div class="form-group">
             <label for="tipo" class="form-label">Tipo de Ingreso</label>
             <select id="tipo" name="tipo" class="form-control" required>
-                <option value="Diezmo" {{ old('tipo') == 'Diezmo' ? 'selected' : '' }}>Diezmo</option>
-                <option value="Ofrenda" {{ old('tipo', 'Ofrenda') == 'Ofrenda' ? 'selected' : '' }}>Ofrenda</option>
-                <option value="Donación" {{ old('tipo') == 'Donación' ? 'selected' : '' }}>Donación</option>
-                <option value="Inscripción Curso" {{ old('tipo') == 'Inscripción Curso' ? 'selected' : '' }}>Inscripción Curso</option>
+                @foreach(\App\Enums\TipoIngreso::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" {{ old('tipo', 'Ofrenda') === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
+                @endforeach
             </select>
         </div>
 

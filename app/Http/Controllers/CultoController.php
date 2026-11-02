@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DiaSemana;
 use App\Models\Culto;
 use App\Models\LiderIglesia;
+use App\Rules\SoloLetras;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CultoController extends Controller
 {
@@ -26,8 +29,8 @@ class CultoController extends Controller
     {
         $validated = $request->validate([
             'id_lider_iglesia' => 'required|exists:lideres_iglesia,id',
-            'nombre' => 'required|string|max:255',
-            'dia_semana' => 'required|string|in:Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras],
+            'dia_semana' => ['required', Rule::enum(DiaSemana::class)],
             'hora' => 'required|date_format:H:i',
             'descripcion' => 'nullable|string',
         ]);
@@ -58,8 +61,8 @@ class CultoController extends Controller
 
         $validated = $request->validate([
             'id_lider_iglesia' => 'required|exists:lideres_iglesia,id',
-            'nombre' => 'required|string|max:255',
-            'dia_semana' => 'required|string|in:Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras],
+            'dia_semana' => ['required', Rule::enum(DiaSemana::class)],
             'hora' => 'required|date_format:H:i',
             'descripcion' => 'nullable|string',
         ]);
@@ -76,5 +79,4 @@ class CultoController extends Controller
 
         return redirect()->route('cultos.index')->with('success', 'Culto eliminado lógicamente.');
     }
-
 }

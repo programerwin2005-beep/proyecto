@@ -252,6 +252,262 @@
 </div>
 @endif
 
+{{-- ============ 4b. Indicadores clave y alertas ============ --}}
+@php
+    $kpis = $kpis ?? [];
+    $kpiMembresia = $kpis['membresia'] ?? null;
+    $kpiMinisterios = $kpis['ministerios'] ?? null;
+    $kpiAcademia = $kpis['academia'] ?? null;
+    $kpiFinanzas = $kpis['finanzas'] ?? null;
+    $kpiCobranza = $kpis['cobranza'] ?? null;
+    $kpiPersonal = $kpis['personal'] ?? null;
+    $kpiSeguridad = $kpis['seguridad'] ?? null;
+    $kpiCalidad = $kpis['calidad'] ?? null;
+
+    // Semáforo reutilizando los estilos de asistencia (ok / aviso / crítico).
+    $semaforo = function ($valor, $limiteOk, $limiteAviso, $mayorEsMejor = true) {
+        if ($valor === null) {
+            return '';
+        }
+        if ($mayorEsMejor) {
+            return $valor >= $limiteOk ? 'dash-att__item--ok' : ($valor >= $limiteAviso ? 'dash-att__item--late' : 'dash-att__item--no');
+        }
+        return $valor <= $limiteOk ? 'dash-att__item--ok' : ($valor <= $limiteAviso ? 'dash-att__item--late' : 'dash-att__item--no');
+    };
+
+    $alertaActividades = $kpiMinisterios['atrasadas_lista'] ?? [];
+    $alertaContratos = $kpiPersonal['por_vencer_lista'] ?? [];
+    $alertaCursos = collect($kpiCobranza['cursos'] ?? [])->where('saldo', '>', 0)->sortByDesc('saldo')->take(5);
+    $alertaUsuarios = $kpiSeguridad['sin_rol_lista'] ?? [];
+    $alertaInactivos = $kpiSeguridad['inactivos_lista'] ?? [];
+    $hayAlertas = count($alertaActividades) > 0
+        || count($alertaContratos) > 0
+        || $alertaCursos->isNotEmpty()
+        || count($alertaUsuarios) > 0
+        || count($alertaInactivos) > 0;
+@endphp
+
+@if($kpis)
+<div class="dash-grid dash-grid--lists">
+    <section class="dash-panel" aria-labelledby="dash-kpi-title">
+        <div class="dash-panel__head">
+            <div>
+                <h2 class="dash-panel__title" id="dash-kpi-title">Indicadores clave</h2>
+                <p class="dash-panel__desc">Métricas de decisión del período actual</p>
+            </div>
+        </div>
+
+        <div class="dash-kpi-grid">
+            @if($kpiMembresia)
+            <div class="dash-att__item {{ $semaforo($kpiMembresia['pct_activos'], 80, 60) }}">
+                <span class="dash-att__value">{{ $kpiMembresia['pct_activos'] !== null ? $kpiMembresia['pct_activos'].'%' : '—' }}</span>
+                <span class="dash-att__label">Miembros activos · {{ number_format($kpiMembresia['activos']) }} de {{ number_format($kpiMembresia['total']) }}</span>
+            </div>
+            <div class="dash-att__item dash-att__item--info">
+                <span class="dash-att__value">{{ number_format($kpiMembresia['altas_mes']) }}</span>
+                <span class="dash-att__label">Altas del mes · promedio 3m: {{ number_format($kpiMembresia['altas_promedio_3m'], 1) }}</span>
+            </div>
+            @endif
+
+            @if($kpiMinisterios)
+            <div class="dash-att__item {{ $semaforo($kpiMinisterios['sin_lider'], 0, 2, false) }}">
+                <span class="dash-att__value">{{ number_format($kpiMinisterios['sin_lider']) }}</span>
+                <span class="dash-att__label">Ministerios sin líder · de {{ number_format($kpiMinisterios['total']) }}</span>
+            </div>
+            <div class="dash-att__item {{ $semaforo($kpiMinisterios['atrasadas'], 0, 3, false) }}">
+                <span class="dash-att__value">{{ number_format($kpiMinisterios['atrasadas']) }}</span>
+                <span class="dash-att__label">Actividades atrasadas · de {{ number_format($kpiMinisterios['actividades_total']) }} del período</span>
+            </div>
+            @endif
+
+            @if($kpiAcademia)
+            <div class="dash-att__item {{ $semaforo($kpiAcademia['ocupacion_pct'], 70, 50) }}">
+                <span class="dash-att__value">{{ $kpiAcademia['ocupacion_pct'] !== null ? $kpiAcademia['ocupacion_pct'].'%' : '—' }}</span>
+                <span class="dash-att__label">Ocupación de cursos · {{ number_format($kpiAcademia['inscritos']) }} de {{ number_format($kpiAcademia['cupo_total']) }} cupos</span>
+            </div>
+            <div class="dash-att__item {{ $semaforo($kpiAcademia['asistencia_pct'], 80, 60) }}">
+                <span class="dash-att__value">{{ $kpiAcademia['asistencia_pct'] !== null ? $kpiAcademia['asistencia_pct'].'%' : '—' }}</span>
+                <span class="dash-att__label">Asistencia a clases · {{ number_format($kpiAcademia['registros']) }} registros</span>
+            </div>
+            @endif
+
+            @if($kpiFinanzas)
+            <div class="dash-att__item {{ $kpiFinanzas['saldo'] >= 0 ? 'dash-att__item--ok' : 'dash-att__item--no' }}">
+                <span class="dash-att__value">Bs {{ number_format($kpiFinanzas['saldo'], 2) }}</span>
+                <span class="dash-att__label">Saldo del mes · ingresos Bs {{ number_format($kpiFinanzas['ingresos'], 2) }}</span>
+            </div>
+            <div class="dash-att__item {{ $semaforo($kpiFinanzas['pct_personal'], 30, 45, false) }}">
+                <span class="dash-att__value">{{ $kpiFinanzas['pct_personal'] !== null ? $kpiFinanzas['pct_personal'].'%' : '—' }}</span>
+                <span class="dash-att__label">Gasto en personal · Bs {{ number_format($kpiFinanzas['personal'], 2) }}</span>
+            </div>
+            @endif
+
+            @if($kpiCobranza)
+            <div class="dash-att__item {{ $semaforo($kpiCobranza['pct'], 80, 50) }}">
+                <span class="dash-att__value">{{ $kpiCobranza['pct'] !== null ? $kpiCobranza['pct'].'%' : '—' }}</span>
+                <span class="dash-att__label">Cobranza de cursos · Bs {{ number_format($kpiCobranza['cobrado'], 2) }} de Bs {{ number_format($kpiCobranza['esperado'], 2) }}</span>
+            </div>
+            <div class="dash-att__item dash-att__item--info">
+                <span class="dash-att__value">Bs {{ number_format($kpiCobranza['saldo'], 2) }}</span>
+                <span class="dash-att__label">Saldo por cobrar · {{ number_format($kpiCobranza['inscripciones_con_saldo']) }} inscripciones</span>
+            </div>
+            @endif
+
+            @if($kpiPersonal)
+            <div class="dash-att__item {{ $semaforo($kpiPersonal['por_vencer'], 0, 2, false) }}">
+                <span class="dash-att__value">{{ number_format($kpiPersonal['por_vencer']) }}</span>
+                <span class="dash-att__label">Contratos por vencer · próximos 30 días</span>
+            </div>
+            @endif
+
+            @if($kpiSeguridad)
+            <div class="dash-att__item {{ $semaforo($kpiSeguridad['sin_rol'], 0, 0, false) }}">
+                <span class="dash-att__value">{{ number_format($kpiSeguridad['sin_rol']) }}</span>
+                <span class="dash-att__label">Usuarios sin rol · de {{ number_format($kpiSeguridad['total_usuarios']) }}</span>
+            </div>
+            <div class="dash-att__item {{ $semaforo($kpiSeguridad['inactivos_30'], 0, 2, false) }}">
+                <span class="dash-att__value">{{ number_format($kpiSeguridad['inactivos_30']) }}</span>
+                <span class="dash-att__label">Usuarios inactivos · sin acceso en 30 días</span>
+            </div>
+            @endif
+        </div>
+
+        @if($kpiSeguridad && count($kpiSeguridad['modulos'] ?? []) > 0)
+        <div style="margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 16px;">
+            <h3 style="font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px;">Módulos con más actividad</h3>
+            @foreach($kpiSeguridad['modulos'] as $modulo)
+            <div class="dash-list__item" style="padding: 6px 0;">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ ucfirst($modulo['modulo']) }}</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="badge dash-badge badge-info">{{ number_format($modulo['total']) }} acciones</span>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+    </section>
+
+    <section class="dash-panel" aria-labelledby="dash-alertas-title">
+        <div class="dash-panel__head">
+            <div>
+                <h2 class="dash-panel__title" id="dash-alertas-title">Alertas accionables</h2>
+                <p class="dash-panel__desc">Pendientes que requieren seguimiento</p>
+            </div>
+        </div>
+
+        @if($hayAlertas)
+            @foreach($alertaContratos as $contrato)
+            <div class="dash-list__item">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ $contrato['miembro'] }}</span>
+                    <span class="dash-list__meta">Contrato por vencer</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="dash-list__date">{{ \Carbon\Carbon::parse($contrato['fecha_fin'])->locale('es')->translatedFormat('d M Y') }}</span>
+                    <span class="badge dash-badge badge-warning">{{ $contrato['dias'] }} días</span>
+                </div>
+            </div>
+            @endforeach
+
+            @foreach($alertaActividades as $actividad)
+            <div class="dash-list__item">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ $actividad['nombre'] }}</span>
+                    <span class="dash-list__meta">Actividad atrasada · {{ $actividad['estado'] ?? 'Sin estado' }}</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="dash-list__date">{{ \Carbon\Carbon::parse($actividad['fecha'])->locale('es')->translatedFormat('d M Y') }}</span>
+                    <span class="badge dash-badge badge-warning">{{ $actividad['avance'] !== null ? $actividad['avance'].'%' : 'Sin avance' }}</span>
+                </div>
+            </div>
+            @endforeach
+
+            @foreach($alertaCursos as $curso)
+            <div class="dash-list__item">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ $curso['nombre'] }}</span>
+                    <span class="dash-list__meta">Cobranza pendiente · {{ $curso['pct'] !== null ? $curso['pct'].'%' : '—' }} cobrado</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="dash-list__date">Bs {{ number_format($curso['saldo'], 2) }}</span>
+                    <span class="badge dash-badge badge-warning">Por cobrar</span>
+                </div>
+            </div>
+            @endforeach
+
+            @foreach($alertaUsuarios as $usuario)
+            <div class="dash-list__item">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ $usuario['name'] }}</span>
+                    <span class="dash-list__meta">{{ $usuario['email'] }}</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="badge dash-badge badge-inactive">Sin rol</span>
+                </div>
+            </div>
+            @endforeach
+
+            @foreach($alertaInactivos as $usuario)
+            <div class="dash-list__item">
+                <div class="dash-list__main">
+                    <span class="dash-list__name">{{ $usuario['name'] }}</span>
+                    <span class="dash-list__meta">{{ $usuario['email'] }}</span>
+                </div>
+                <div class="dash-list__side">
+                    <span class="dash-list__date">{{ $usuario['last_login_at'] ? \Carbon\Carbon::parse($usuario['last_login_at'])->locale('es')->diffForHumans() : 'Nunca ingresó' }}</span>
+                    <span class="badge dash-badge badge-inactive">Inactivo</span>
+                </div>
+            </div>
+            @endforeach
+        @else
+        <div class="dash-empty">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.3" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            <p>Sin alertas pendientes en este período.</p>
+        </div>
+        @endif
+    </section>
+</div>
+@endif
+
+@if($kpiCalidad)
+<div class="dash-panel" aria-labelledby="dash-calidad-title" style="margin-top: 24px;">
+    <div class="dash-panel__head">
+        <div>
+            <h2 class="dash-panel__title" id="dash-calidad-title">Calidad</h2>
+            <p class="dash-panel__desc">Última importación de cobertura, pruebas y análisis de seguridad</p>
+        </div>
+    </div>
+
+    @if($kpiCalidad['capturado_en'])
+    <div class="dash-kpi-grid">
+        <div class="dash-att__item dash-att__item--info">
+            <span class="dash-att__value">{{ $kpiCalidad['cobertura'] !== null ? number_format($kpiCalidad['cobertura'], 1).'%' : '—' }}</span>
+            <span class="dash-att__label">Cobertura de código</span>
+        </div>
+        <div class="dash-att__item dash-att__item--info">
+            <span class="dash-att__value">{{ $kpiCalidad['tests'] !== null ? number_format($kpiCalidad['tests']) : '—' }}</span>
+            <span class="dash-att__label">Pruebas ejecutadas</span>
+        </div>
+        <div class="dash-att__item {{ ($kpiCalidad['fallos'] ?? 0) > 0 ? 'dash-att__item--no' : 'dash-att__item--ok' }}">
+            <span class="dash-att__value">{{ $kpiCalidad['fallos'] !== null ? number_format($kpiCalidad['fallos']) : '—' }}</span>
+            <span class="dash-att__label">Pruebas fallidas</span>
+        </div>
+        <div class="dash-att__item {{ ($kpiCalidad['hallazgos'] ?? 0) > 0 ? 'dash-att__item--late' : 'dash-att__item--ok' }}">
+            <span class="dash-att__value">{{ number_format($kpiCalidad['hallazgos']) }}</span>
+            <span class="dash-att__label">Hallazgos de seguridad abiertos</span>
+        </div>
+    </div>
+    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;">Capturado: {{ \Carbon\Carbon::parse($kpiCalidad['capturado_en'])->locale('es')->translatedFormat('d M Y H:i') }}</p>
+    @else
+    <div class="dash-empty">
+        <p>Sin datos de calidad. Ejecute <code>php artisan kpi:importar-calidad</code>.</p>
+    </div>
+    @endif
+</div>
+@endif
+
 {{-- ============ 5. Próximas actividades y próximas sesiones ============ --}}
 <div class="dash-grid dash-grid--lists">
     <section class="dash-panel" aria-labelledby="dash-actividades-title">
@@ -281,7 +537,8 @@
             </div>
             <div class="dash-list__side">
                 <span class="dash-list__date">{{ \Carbon\Carbon::parse($actividad->fecha)->locale('es')->translatedFormat('d M Y') }}</span>
-                <span class="badge dash-badge @if($actividad->estado == 'Completado') badge-active @elseif($actividad->estado == 'Cancelado') badge-inactive @else badge-warning @endif">{{ $actividad->estado }}</span>
+                @php($estadoActividad = $actividad->estado instanceof \BackedEnum ? $actividad->estado->value : $actividad->estado)
+                <span class="badge dash-badge @if($estadoActividad === 'Completada') badge-active @elseif($estadoActividad === 'Cancelada') badge-inactive @else badge-warning @endif">{{ $estadoActividad }}</span>
             </div>
         </div>
         @empty

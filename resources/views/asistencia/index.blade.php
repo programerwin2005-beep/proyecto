@@ -85,11 +85,11 @@
                         <td>{{ $asistencia->sesion ? \Carbon\Carbon::parse($asistencia->sesion->fecha)->format('d/m/Y') : 'N/A' }}</td>
                         <td>
                             <span class="badge
-                                @if($asistencia->estado == 'Presente') badge-active
-                                @elseif($asistencia->estado == 'Ausente') badge-inactive
-                                @elseif($asistencia->estado == 'Tardanza') badge-warning
+                                @if($asistencia->estado?->value === 'Presente') badge-active
+                                @elseif($asistencia->estado?->value === 'Ausente') badge-inactive
+                                @elseif($asistencia->estado?->value === 'Tardanza') badge-warning
                                 @else badge-info
-                                @endif">{{ $asistencia->estado }}</span>
+                                @endif">{{ $asistencia->estado?->value }}</span>
                             @if($asistencia->observacion)
                                 <div style="font-size: 12px; color: var(--text-secondary);">{{ $asistencia->observacion }}</div>
                             @endif

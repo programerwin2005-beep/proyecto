@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\SoloLetras;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LiderIglesiaRequest extends FormRequest
@@ -15,7 +16,7 @@ class LiderIglesiaRequest extends FormRequest
     {
         return [
             'id_cargo' => 'required|exists:cargos,id',
-            'nombre' => 'required|string|max:255',
+            'nombre' => ['required', 'string', 'max:255', new SoloLetras],
             'telefono' => 'nullable|string|max:8|regex:/^[0-9 ]*$/',
             'fecha_inicio' => 'required|date',
             'activo' => 'boolean',

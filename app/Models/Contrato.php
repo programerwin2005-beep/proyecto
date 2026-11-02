@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EnumTolerante;
+use App\Enums\TipoCompensacion;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,17 +26,12 @@ class Contrato extends Model
 
     public static function tiposCompensacion(): array
     {
-        return [
-            self::TIPO_SALARIO => 'Salario',
-            self::TIPO_BONO => 'Bono',
-            self::TIPO_BENEFICIOS => 'Beneficios',
-            self::TIPO_VOLUNTARIO => 'Voluntario',
-        ];
+        return TipoCompensacion::opciones();
     }
 
     public function esVoluntario(): bool
     {
-        return $this->tipo_compensacion === self::TIPO_VOLUNTARIO;
+        return $this->tipo_compensacion === TipoCompensacion::Voluntario;
     }
 
     protected $fillable = [
@@ -51,6 +48,7 @@ class Contrato extends Model
     {
         return [
             'activo' => 'boolean',
+            'tipo_compensacion' => EnumTolerante::class.':'.TipoCompensacion::class,
         ];
     }
 

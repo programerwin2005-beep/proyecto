@@ -48,7 +48,7 @@
             $registro->sesion->curso->nombre ?? '—',
             $registro->sesion->tema ?? '—',
             $registro->sesion ? \Carbon\Carbon::parse($registro->sesion->fecha)->format('d/m/Y') : '—',
-            ['badge' => $registro->estado, 'tone' => $tonosEstado[$registro->estado] ?? 'info'],
+            ['badge' => $registro->estado?->value, 'tone' => $tonosEstado[$registro->estado?->value] ?? 'info'],
         ];
     })->all();
 @endphp

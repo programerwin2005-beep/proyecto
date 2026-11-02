@@ -35,8 +35,9 @@ class Sesion extends Model
     public function miembrosAsistencia(): BelongsToMany
     {
         return $this->belongsToMany(Miembro::class, 'asistencias_sesion')
-            ->withPivot(['estado', 'observacion'])
-            ->withTimestamps();
+            ->withPivot(['estado', 'observacion', 'deleted_at'])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     /**

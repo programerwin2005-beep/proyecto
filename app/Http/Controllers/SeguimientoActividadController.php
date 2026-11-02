@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoSeguimiento;
 use App\Models\Actividad;
 use App\Models\SeguimientoActividad;
+use App\Rules\SoloLetras;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SeguimientoActividadController extends Controller
 {
@@ -28,9 +31,9 @@ class SeguimientoActividadController extends Controller
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
-            'responsable' => 'required|string|max:255',
+            'responsable' => ['required', 'string', 'max:255', new SoloLetras],
             'porcentaje_avance' => 'required|numeric|min:0|max:100',
-            'estado' => 'required|string|in:En Progreso,Completado,Detenido',
+            'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
         SeguimientoActividad::create($validated);
@@ -61,9 +64,9 @@ class SeguimientoActividadController extends Controller
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
-            'responsable' => 'required|string|max:255',
+            'responsable' => ['required', 'string', 'max:255', new SoloLetras],
             'porcentaje_avance' => 'required|numeric|min:0|max:100',
-            'estado' => 'required|string|in:En Progreso,Completado,Detenido',
+            'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
         $seguimiento->update($validated);
@@ -78,5 +81,4 @@ class SeguimientoActividadController extends Controller
 
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento eliminado lógicamente.');
     }
-
 }

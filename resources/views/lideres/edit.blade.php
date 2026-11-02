@@ -36,7 +36,7 @@
 
         <div class="form-group">
             <label for="nombre" class="form-label">Nombre Completo</label>
-            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $lider->nombre) }}" required>
+            <input id="nombre" type="text" name="nombre" class="form-control" value="{{ old('nombre', $lider->nombre) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">

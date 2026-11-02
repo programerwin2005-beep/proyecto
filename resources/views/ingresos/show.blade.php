@@ -25,11 +25,11 @@
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Tipo</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $ingreso->tipo }}</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $ingreso->tipo?->value }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Método de Pago</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $ingreso->metodo_pago }}</span>
+            <span style="font-weight: 600; color: var(--text-primary);">{{ $ingreso->metodo_pago?->value }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Actividad</span>
