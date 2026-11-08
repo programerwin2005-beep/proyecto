@@ -32,7 +32,14 @@ class CursoController extends Controller
     public function show($id)
     {
         $curso = Curso::withTrashed()->findOrFail($id);
-        $curso->load(['docentes.miembro', 'sesiones']);
+        $curso->load(['sesiones.docente.miembro']);
+
+        $docentes = $curso->sesiones
+            ->pluck('docente')
+            ->filter()
+            ->unique('id')
+            ->sortBy(fn ($docente) => $docente->miembro?->nombre ?? '')
+            ->values();
 
         $inscripciones = Inscripcion::with(['miembro', 'pagos' => fn ($q) => $q->withTrashed()])
             ->withSum(['pagos' => fn ($q) => $q->withTrashed()], 'monto')
@@ -40,7 +47,7 @@ class CursoController extends Controller
             ->orderBy('fecha_inscripcion')
             ->get();
 
-        return view('cursos.show', compact('curso', 'inscripciones'));
+        return view('cursos.show', compact('curso', 'inscripciones', 'docentes'));
     }
 
     public function edit($id)
@@ -67,5 +74,4 @@ class CursoController extends Controller
 
         return redirect()->route('cursos.index')->with('success', 'Curso eliminado lógicamente.');
     }
-
 }

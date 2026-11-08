@@ -24,10 +24,6 @@ return new class extends Migration
             $table->unique(['user_id', 'role_id'], 'role_user_user_id_role_id_unique');
         });
 
-        Schema::table('docente_curso', function (Blueprint $table) {
-            $table->unique(['docente_id', 'curso_id'], 'docente_curso_docente_id_curso_id_unique');
-        });
-
         Schema::table('inscripciones', function (Blueprint $table) {
             $table->unique(['miembro_id', 'curso_id'], 'inscripciones_miembro_id_curso_id_unique');
         });
@@ -88,10 +84,6 @@ return new class extends Migration
             $table->dropUnique('inscripciones_miembro_id_curso_id_unique');
         });
 
-        Schema::table('docente_curso', function (Blueprint $table) {
-            $table->dropUnique('docente_curso_docente_id_curso_id_unique');
-        });
-
         Schema::table('role_user', function (Blueprint $table) {
             $table->dropUnique('role_user_user_id_role_id_unique');
         });
@@ -114,7 +106,6 @@ return new class extends Migration
             'docentes' => ['id_miembro'],
             'ingresos' => ['pago_curso_id'],
             'role_user' => ['user_id', 'role_id'],
-            'docente_curso' => ['docente_id', 'curso_id'],
             'inscripciones' => ['miembro_id', 'curso_id'],
         ];
 

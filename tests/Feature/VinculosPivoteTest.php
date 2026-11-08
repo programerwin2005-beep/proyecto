@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Asistencia;
 use App\Models\Curso;
-use App\Models\Docente;
 use App\Models\Inscripcion;
 use App\Models\Miembro;
 use App\Models\Ministerio;
@@ -46,45 +45,6 @@ class VinculosPivoteTest extends TestCase
 
         $this->assertTrue($usuario->fresh()->hasRole('Secretario'));
         $this->assertSame(1, DB::table('role_user')->where('user_id', $usuario->id)->count());
-    }
-
-    public function test_docente_curso_desvinculado_no_se_devuelve_y_se_reactiva(): void
-    {
-        $miembro = $this->crearMiembro('Docente de Prueba');
-        $docente = Docente::create([
-            'id_miembro' => $miembro->id,
-            'especialidad' => 'Teología',
-            'activo' => true,
-        ]);
-        $curso = $this->crearCurso('Curso Compartido');
-
-        VinculoPivote::adjuntar($curso->docentes(), $docente->id);
-        $this->assertTrue(
-            $curso->fresh()->docentes()->where('docentes.id', $docente->id)->exists()
-        );
-        $this->assertTrue(
-            Curso::paraDocente($docente->id)->whereKey($curso->id)->exists()
-        );
-
-        VinculoPivote::desvincular($curso->docentes(), $docente->id);
-
-        $this->assertFalse(
-            $curso->fresh()->docentes()->where('docentes.id', $docente->id)->exists()
-        );
-        $this->assertSoftDeleted('docente_curso', [
-            'docente_id' => $docente->id,
-            'curso_id' => $curso->id,
-        ]);
-
-        VinculoPivote::adjuntar($curso->docentes(), $docente->id);
-
-        $this->assertTrue(
-            $curso->fresh()->docentes()->where('docentes.id', $docente->id)->exists()
-        );
-        $this->assertSame(
-            1,
-            DB::table('docente_curso')->where('docente_id', $docente->id)->count()
-        );
     }
 
     public function test_miembro_ministerio_desvinculado_no_se_devuelve_y_se_reactiva(): void

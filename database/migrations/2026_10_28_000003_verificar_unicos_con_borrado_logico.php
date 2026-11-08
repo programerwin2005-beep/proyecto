@@ -30,7 +30,6 @@ return new class extends Migration
         $checks = [
             'asistencias_sesion' => ['sesion_id', 'miembro_id'],
             'inscripciones' => ['miembro_id', 'curso_id'],
-            'docente_curso' => ['docente_id', 'curso_id'],
             'role_user' => ['user_id', 'role_id'],
             'docentes' => ['id_miembro'],
             'ingresos' => ['pago_curso_id'],

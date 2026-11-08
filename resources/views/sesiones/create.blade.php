@@ -77,7 +77,6 @@
 <script>
     const cursosData = @json($cursosData);
     const cursoSelect = document.getElementById('id_curso');
-    const docenteSelect = document.getElementById('id_docente');
     const fechaInput = document.getElementById('fecha');
     const horaInput = document.getElementById('hora');
 
@@ -135,10 +134,6 @@
 
         const prox = siguienteFechaPermitida(cursoId);
         if (prox) fechaInput.value = prox;
-
-        if (data.docentes.length > 0) {
-            docenteSelect.value = String(data.docentes[0]);
-        }
     }
 
     cursoSelect.addEventListener('change', aplicarCurso);

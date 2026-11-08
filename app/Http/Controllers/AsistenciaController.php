@@ -166,14 +166,10 @@ class AsistenciaController extends Controller
         if (auth()->user()->esDocente()) {
             $docente = auth()->user()->docente;
 
-            $pertenece = $docente && $docente->activo && (
-                Inscripcion::where('miembro_id', $miembroId)
-                    ->whereHas('curso.docentes', fn ($q) => $q->where('docentes.id', $docente->id))
-                    ->exists()
-                || Asistencia::where('miembro_id', $miembroId)
+            $pertenece = $docente && $docente->activo
+                && Asistencia::where('miembro_id', $miembroId)
                     ->whereHas('sesion', fn ($q) => $q->where('id_docente', $docente->id))
-                    ->exists()
-            );
+                    ->exists();
 
             abort_unless($pertenece, 403, 'No tienes acceso al historial de este miembro.');
 

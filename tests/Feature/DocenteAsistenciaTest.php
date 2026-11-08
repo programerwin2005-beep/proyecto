@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\Sesion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -48,7 +49,6 @@ class DocenteAsistenciaTest extends TestCase
         [$docenteAjeno] = $this->crearDocente('Docente Ajeno', 'docente_ajeno@test.com');
 
         $this->curso = $this->crearCurso('Curso Propio');
-        $this->curso->docentes()->attach($this->docente->id);
         $this->sesion = $this->crearSesion($this->curso, $this->docente, '2026-10-20');
 
         $this->alumno = $this->crearMiembro('Alumno Propio', 'alumno_propio@test.com');
@@ -60,7 +60,6 @@ class DocenteAsistenciaTest extends TestCase
         ]);
 
         $this->cursoAjeno = $this->crearCurso('Curso Ajeno');
-        $this->cursoAjeno->docentes()->attach($docenteAjeno->id);
         $this->sesionAjena = $this->crearSesion($this->cursoAjeno, $docenteAjeno, '2026-10-21');
 
         $this->alumnoAjeno = $this->crearMiembro('Alumno Ajeno', 'alumno_ajeno@test.com');
@@ -159,6 +158,34 @@ class DocenteAsistenciaTest extends TestCase
             ->get(route('asistencia.registrar'))
             ->assertOk()
             ->assertSee('Curso Directo');
+    }
+
+    public function test_no_existe_la_tabla_pivote_docente_curso(): void
+    {
+        $this->assertFalse(Schema::hasTable('docente_curso'));
+    }
+
+    public function test_administrador_ve_los_formularios_de_sesion_con_todos_los_docentes(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('sesiones.create'))
+            ->assertOk()
+            ->assertSee('Docente Propio')
+            ->assertSee('Docente Ajeno');
+
+        $this->actingAs($this->admin)
+            ->get(route('sesiones.edit', $this->sesion))
+            ->assertOk()
+            ->assertSee('Docente Propio');
+    }
+
+    public function test_curso_muestra_solo_los_docentes_de_sus_sesiones(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('cursos.show', $this->curso))
+            ->assertOk()
+            ->assertSee('Docente Propio')
+            ->assertDontSee('Docente Ajeno');
     }
 
     public function test_docente_inactivo_no_puede_tomar_asistencia(): void

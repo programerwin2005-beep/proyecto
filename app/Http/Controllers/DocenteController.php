@@ -66,7 +66,11 @@ class DocenteController extends Controller
 
     public function show($id)
     {
-        $docente = Docente::with(['miembro', 'user', 'cursos'])->withTrashed()->findOrFail($id);
+        $docente = Docente::with([
+            'miembro',
+            'user',
+            'sesiones' => fn ($q) => $q->with('curso')->orderByDesc('fecha'),
+        ])->withTrashed()->findOrFail($id);
 
         return view('docentes.show', compact('docente'));
     }

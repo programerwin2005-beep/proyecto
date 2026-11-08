@@ -32,16 +32,12 @@ class SesionController extends Controller
 
     public function create()
     {
-        $cursos = Curso::with('docentes.miembro')->get();
+        $cursos = Curso::get();
         $docentes = Docente::with('miembro')->where('activo', true)->get()->sortBy('miembro.nombre')->values();
-
-        $docentesPorCurso = $cursos->mapWithKeys(fn ($c) => [
-            $c->id => $c->docentes->pluck('id')->toArray(),
-        ]);
 
         $cursosData = $this->cursosParaJS($cursos);
 
-        return view('sesiones.create', compact('cursos', 'docentes', 'docentesPorCurso', 'cursosData'));
+        return view('sesiones.create', compact('cursos', 'docentes', 'cursosData'));
     }
 
     public function store(Request $request)
@@ -103,16 +99,12 @@ class SesionController extends Controller
     public function edit($id)
     {
         $sesion = Sesion::withTrashed()->findOrFail($id);
-        $cursos = Curso::with('docentes.miembro')->get();
+        $cursos = Curso::get();
         $docentes = Docente::with('miembro')->where('activo', true)->get()->sortBy('miembro.nombre')->values();
-
-        $docentesPorCurso = $cursos->mapWithKeys(fn ($c) => [
-            $c->id => $c->docentes->pluck('id')->toArray(),
-        ]);
 
         $cursosData = $this->cursosParaJS($cursos);
 
-        return view('sesiones.edit', compact('sesion', 'cursos', 'docentes', 'docentesPorCurso', 'cursosData'));
+        return view('sesiones.edit', compact('sesion', 'cursos', 'docentes', 'cursosData'));
     }
 
     private function cursosParaJS($cursos)
@@ -125,7 +117,6 @@ class SesionController extends Controller
                 'dias_nombres' => $c->dias_nombres,
                 'f_inicio' => $c->f_inicio ? Carbon::parse($c->f_inicio)->format('Y-m-d') : null,
                 'f_fin' => $c->f_fin ? Carbon::parse($c->f_fin)->format('Y-m-d') : null,
-                'docentes' => $c->docentes->pluck('id')->toArray(),
             ],
         ]);
     }
@@ -183,12 +174,6 @@ class SesionController extends Controller
         $fin = Carbon::parse($curso->f_fin);
         $hora = substr((string) $curso->hora_inicio, 0, 5);
 
-        // Si el curso tiene un único docente, las sesiones generadas quedan
-        // asignadas a él; con varios docentes se asigna manualmente.
-        $docenteUnico = $curso->docentes()->count() === 1
-            ? $curso->docentes()->first()
-            : null;
-
         $diasCurso = array_map('intval', $curso->dias_semana ?? []);
 
         while ($fecha->lte($fin)) {
@@ -198,7 +183,6 @@ class SesionController extends Controller
                 if (! in_array($clave, $existentes)) {
                     Sesion::create([
                         'id_curso' => $curso->id,
-                        'id_docente' => $docenteUnico?->id,
                         'fecha' => $fecha->toDateString(),
                         'hora' => $curso->hora_inicio,
                         'tema' => 'Sesión '.($creadas + 1),

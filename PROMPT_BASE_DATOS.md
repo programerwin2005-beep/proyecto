@@ -177,10 +177,6 @@ Enum `EstadoSeguimiento`: `En Progreso`, `Completado`, `Detenido`. Valores actua
 
 > ⚠️ **`dias_semana` guarda strings numéricos, no enteros:** en la BD actual es `["1"]` y `["6"]`, no `[1]` ni `[6]`. Por eso `JSON_CONTAINS(dias_semana, '1')` **no** coincide: usa `JSON_CONTAINS(dias_semana, '"1"')` o `JSON_OVERLAPS(dias_semana, '["1","6"]')`. Mapeo ISO: 1 = lunes … 7 = domingo.
 
-**`docente_curso`** — pivote N:M docente ↔ curso.
-`id`, `docente_id` → `docentes.id` (CASCADE), `curso_id` → `cursos.id` (CASCADE), timestamps, `deleted_at`.
-Actualmente **vacía (0 filas)**, aunque `sesiones.id_docente` sí está poblado en algunos casos. Los desvínculos son lógicos y se filtran con `wherePivotNull('deleted_at')`.
-
 **`inscripciones`**
 `id`, `miembro_id` → `miembros.id` (CASCADE), `curso_id` → `cursos.id` (CASCADE), `fecha_inscripcion` DATE, `fecha_vencimiento` DATE NULL (agregada por `2026_10_28_000001`), `estado` VARCHAR(255) default `Activo`, timestamps, `deleted_at`.
 Enum `EstadoInscripcion`: `Activo`, `Retirado`, `Completado`. Valores actuales: solo `Activo` (12 filas).
@@ -300,8 +296,6 @@ erDiagram
     actividades ||--o{ seguimiento_actividades : avanza
     cursos ||--o{ inscripciones : recibe
     cursos ||--o{ sesiones : programa
-    cursos ||--o{ docente_curso : dicta
-    docentes ||--o{ docente_curso : imparte
     docentes ||--o{ sesiones : dicta
     sesiones ||--o{ asistencias_sesion : registra
     inscripciones ||--o{ pago_cursos : paga
@@ -349,7 +343,7 @@ Los estados y tipos se representan con **Enums de PHP** (`app/Enums`) y se guard
 ## 7. Trampas y advertencias del modelo
 
 - **Borrado lógico:** sin `deleted_at IS NULL` los totales se inflan. Aplica el filtro a cada tabla unida. Hoy **ningún** registro está eliminado, pero el código sí borra lógicamente.
-- **Pivotes con `deleted_at`:** `role_user`, `docente_curso`, `miembro_ministerio`, `inscripciones` y `asistencias_sesion` lo tienen. Las relaciones Eloquent ya usan `withPivot('deleted_at')` + `wherePivotNull('deleted_at')`; no uses `detach()` físico. Los helpers `VinculoPivote` / `TieneRegistroUnico` restauran con `withTrashed()` + `restore()`.
+- **Pivotes con `deleted_at`:** `role_user`, `miembro_ministerio`, `inscripciones` y `asistencias_sesion` lo tienen. Las relaciones Eloquent ya usan `withPivot('deleted_at')` + `wherePivotNull('deleted_at')`; no uses `detach()` físico. Los helpers `VinculoPivote` / `TieneRegistroUnico` restauran con `withTrashed()` + `restore()`.
 - **UNIQUE que incluyen `deleted_at`:** los índices únicos no ignoran las filas eliminadas. Al recrear una relación, restaura la fila existente en lugar de insertar otra. La migración `2026_10_28_000003` verifica duplicados (incluyendo eliminados) y aborta con un mensaje claro antes de tocar índices.
 - **`miembros.email`** es UNIQUE y NULL: varios miembros pueden tener email nulo, pero no repetido.
 - **`ingresos` sin origen:** un ingreso puede no venir de actividad, culto ni pago de curso. Hay 1 caso real.

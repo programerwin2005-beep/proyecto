@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -52,14 +51,6 @@ class Curso extends Model
         return substr((string) $this->hora_inicio, 0, 5).' - '.substr((string) $this->hora_fin, 0, 5);
     }
 
-    public function docentes(): BelongsToMany
-    {
-        return $this->belongsToMany(Docente::class, 'docente_curso')
-            ->withPivot('deleted_at')
-            ->withTimestamps()
-            ->wherePivotNull('deleted_at');
-    }
-
     public function inscripciones(): HasMany
     {
         return $this->hasMany(Inscripcion::class);
@@ -71,14 +62,11 @@ class Curso extends Model
     }
 
     /**
-     * Cursos del docente: los asignados en docente_curso o los que tienen
-     * alguna sesión asignada directamente al docente.
+     * Cursos que dicta el docente: aquellos con al menos una sesión
+     * asignada directamente a él.
      */
     public function scopeParaDocente($query, int $docenteId)
     {
-        return $query->where(function ($sub) use ($docenteId) {
-            $sub->whereHas('docentes', fn ($q) => $q->where('docentes.id', $docenteId))
-                ->orWhereHas('sesiones', fn ($q) => $q->where('id_docente', $docenteId));
-        });
+        return $query->whereHas('sesiones', fn ($q) => $q->where('id_docente', $docenteId));
     }
 }

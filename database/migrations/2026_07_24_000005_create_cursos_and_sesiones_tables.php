@@ -23,14 +23,6 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        Schema::create('docente_curso', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('docente_id')->constrained('docentes')->onDelete('cascade');
-            $table->foreignId('curso_id')->constrained('cursos')->onDelete('cascade');
-            $table->timestamps();
-            $table->softDeletes();
-        });
-
         Schema::create('inscripciones', function (Blueprint $table) {
             $table->id();
             $table->foreignId('miembro_id')->constrained('miembros')->onDelete('cascade');
@@ -70,7 +62,6 @@ return new class extends Migration
         Schema::dropIfExists('asistencias_sesion');
         Schema::dropIfExists('sesiones');
         Schema::dropIfExists('inscripciones');
-        Schema::dropIfExists('docente_curso');
         Schema::dropIfExists('cursos');
     }
 };

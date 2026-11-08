@@ -32,8 +32,8 @@
             <div>@if($curso->tiene_pago) Bs {{ number_format($curso->monto_inscripcion, 2) }} @else <span class="badge badge-active">Gratuito</span> @endif</div>
         </div>
         <div style="background: rgba(255,255,255,.04); padding: 15px 18px; border-radius: 12px; border: 1px solid var(--card-border);">
-            <div style="font-size: 12px; color: var(--text-secondary);">Docentes</div>
-            <div>@forelse($curso->docentes as $docente) {{ $docente->miembro->nombre ?? 'Docente' }} @if(!$loop->last), @endif @empty N/A @endforelse</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Docentes (según sesiones)</div>
+            <div>@forelse($docentes as $docente) {{ $docente->miembro->nombre ?? 'Docente' }} @if(!$loop->last), @endif @empty N/A @endforelse</div>
         </div>
     </div>
 

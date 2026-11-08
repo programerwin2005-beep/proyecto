@@ -12,12 +12,9 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEXT_VER_TODAS = 'Ver todas';
-
     /**
      * Crea un usuario con el rol indicado para comprobar la visibilidad de accesos.
-     */
-    private function usuarioConRol(string $nombreRol): User
+     */    private function usuarioConRol(string $nombreRol): User
     {
         $user = User::factory()->create();
 
@@ -97,10 +94,9 @@ class DashboardTest extends TestCase
             ->assertSee('Flujo Financiero')
             ->assertSee('Resumen General')
             ->assertSee('Asistencia general')
-            ->assertSee('Ingresos del mes por tipo')
-            ->assertSee('Próximas Actividades')
-            ->assertSee('Próximas Sesiones')
-            ->assertSee('Accesos Rápidos')
+            ->assertSee('Próximas actividades')
+            ->assertSee('Próximas sesiones')
+            ->assertSee('Accesos rápidos')
             ->assertSee('dash-bar--in', false)
             ->assertSee('dash-bar--out', false);
     }
@@ -151,7 +147,8 @@ class DashboardTest extends TestCase
             ->assertSee(route('miembros.create'), false)
             ->assertSee(route('ingresos.create'), false)
             ->assertSee(route('contratos.create'), false)
-            ->assertSee(self::TEXT_VER_TODAS);
+            ->assertSee('Nuevo miembro')
+            ->assertSee('Registrar ingreso');
     }
 
     public function test_el_secretario_no_ve_accesos_de_finanzas(): void
@@ -161,9 +158,10 @@ class DashboardTest extends TestCase
         $this->actingAs($user)
             ->view('dashboard', $this->datosDashboard())
             ->assertSee(route('miembros.create'), false)
-            ->assertSee(self::TEXT_VER_TODAS)
+            ->assertSee('Nuevo miembro')
             ->assertDontSee(route('ingresos.create'), false)
-            ->assertDontSee(route('contratos.create'), false);
+            ->assertDontSee(route('contratos.create'), false)
+            ->assertDontSee('Registrar ingreso');
     }
 
     public function test_el_tesorero_no_ve_accesos_de_parametrizacion(): void
@@ -175,6 +173,6 @@ class DashboardTest extends TestCase
             ->assertSee(route('ingresos.create'), false)
             ->assertDontSee(route('miembros.create'), false)
             ->assertDontSee(route('cursos.create'), false)
-            ->assertDontSee(self::TEXT_VER_TODAS);
+            ->assertDontSee('Nuevo miembro');
     }
 }

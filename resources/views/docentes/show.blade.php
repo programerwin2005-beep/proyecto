@@ -49,28 +49,29 @@
         </div>
     </div>
 
-    <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Cursos Asignados</h3>
+    <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Sesiones Asignadas</h3>
     <div class="table-container">
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Curso</th>
-                    <th>Inicio</th>
-                    <th>Fin</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Tema</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($docente->cursos as $curso)
-
+                @forelse($docente->sesiones as $sesion)
                     <tr>
-                        <td>{{ $curso->nombre }}</td>
-                        <td>{{ \Carbon\Carbon::parse($curso->f_inicio)->format('d/m/Y') }}</td>
-                        <td>{{ $curso->f_fin ? \Carbon\Carbon::parse($curso->f_fin)->format('d/m/Y') : 'N/A' }}</td>
+                        <td>{{ $sesion->curso?->nombre ?? 'N/A' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($sesion->fecha)->format('d/m/Y') }}</td>
+                        <td>{{ substr((string) $sesion->hora, 0, 5) }}</td>
+                        <td>{{ $sesion->tema }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-                            Este docente no tiene cursos asignados.
+                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                            Este docente no tiene sesiones asignadas.
                         </td>
                     </tr>
                 @endforelse

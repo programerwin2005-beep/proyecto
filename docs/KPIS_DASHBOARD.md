@@ -940,26 +940,18 @@ $bajaOcupacion = DB::table('cursos as c')
 - **Fórmula:** cursos distintos, sesiones del período y horas semanales por docente.
 - **SQL:**
 ```sql
-WITH asignaciones AS (
-    SELECT dc.docente_id, dc.curso_id
-    FROM docente_curso dc
-    WHERE dc.deleted_at IS NULL
-    UNION
-    SELECT s.id_docente AS docente_id, s.id_curso AS curso_id
-    FROM sesiones s
-    WHERE s.deleted_at IS NULL
-      AND s.id_docente IS NOT NULL
-),
-cursos_docente AS (
-    SELECT a.docente_id,
-           a.curso_id,
+WITH cursos_docente AS (
+    SELECT s.id_docente AS docente_id,
+           s.id_curso AS curso_id,
            MAX(c.hora_inicio) AS hora_inicio,
            MAX(c.hora_fin) AS hora_fin
-    FROM asignaciones a
+    FROM sesiones s
     JOIN cursos c
-      ON c.id = a.curso_id
+      ON c.id = s.id_curso
      AND c.deleted_at IS NULL
-    GROUP BY a.docente_id, a.curso_id
+    WHERE s.deleted_at IS NULL
+      AND s.id_docente IS NOT NULL
+    GROUP BY s.id_docente, s.id_curso
 )
 SELECT d.id,
        m.nombre AS docente,
@@ -983,15 +975,11 @@ ORDER BY cursos DESC, horas_semana DESC;
 ```
 - **Laravel:**
 ```php
-$asignaciones = DB::table('docente_curso')
-    ->select('docente_id', 'curso_id')
+$asignaciones = DB::table('sesiones')
+    ->select('id_docente as docente_id', 'id_curso as curso_id')
     ->whereNull('deleted_at')
-    ->unionAll(
-        DB::table('sesiones')
-            ->select('id_docente as docente_id', 'id_curso as curso_id')
-            ->whereNull('deleted_at')
-            ->whereNotNull('id_docente')
-    );
+    ->whereNotNull('id_docente')
+    ->distinct();
 
 $carga = DB::table('docentes as d')
     ->join('miembros as m', function ($j) {
@@ -1013,7 +1001,7 @@ $carga = DB::table('docentes as d')
 - **Visualización:** barras por docente. Semáforo: rojo si 0 cursos, ámbar si > 20 horas semanales (ajustar según política).
 - **Frecuencia/rol:** mensual; Administrador y Secretario.
 
-> **Hoy `docente_curso` está vacía**, pero `sesiones.id_docente` sí tiene datos. El `UNION` evita depender de una sola ruta. No sumes ambas rutas sin `UNION`: duplicarías cursos.
+> **El dictado se toma siempre de `sesiones.id_docente`**: cada sesión tiene un docente asignado. Un curso puede tener varios docentes cuando sus sesiones los tienen. No existe una asignación docente–curso a nivel de curso.
 
 ### C6. Alumnos en riesgo
 
@@ -2590,7 +2578,7 @@ HAVING COUNT(*) > 1;
 | B4/B5 avance | ≥ 10 actividades con seguimiento | Con 6 actividades el promedio es volátil |
 | C1/C4 ocupación | ≥ 3 cursos y ≥ 30 inscripciones | Con 2 cursos es anecdótico |
 | C2/C3/C6 asistencia | ≥ 8 sesiones por curso | Con 11 sesiones totales y 5 registros, el % es inestable |
-| C5 carga docente | ≥ 3 docentes y `docente_curso` poblado | Hoy se puede usar `sesiones.id_docente`, pero es parcial |
+| C5 carga docente | ≥ 3 docentes con sesiones asignadas | Sin sesiones no hay carga que medir |
 | D2/D3/D7 finanzas | ≥ 6 meses | La composición mensual varía mucho |
 | D6 variación MoM | ≥ 3 meses | El primer mes no tiene comparación |
 | E1–E5 cobranza | ≥ 20 inscripciones pagadas | Con 6 inscripciones pagas el % salta |
@@ -3198,7 +3186,7 @@ ORDER BY campo, filas DESC;
 ## 16. Checklist de aceptación
 
 - [ ] Cada consulta filtra `deleted_at IS NULL` en la tabla base y en **cada** tabla unida (excepto `permisos`, que no tiene la columna).
-- [ ] Los pivotes (`role_user`, `docente_curso`, `miembro_ministerio`) filtran `deleted_at` explícitamente.
+- [ ] Los pivotes (`role_user`, `miembro_ministerio`) filtran `deleted_at` explícitamente.
 - [ ] `asistencias_sesion` se deduplica por `(sesion_id, miembro_id)` antes de contar.
 - [ ] Los ingresos totales salen solo de `ingresos`; `pago_cursos` se usa para detalle o `COALESCE` cuando `monto_total` es `NULL`.
 - [ ] Los estados se normalizan con `CASE`/`LIKE`; no se asume un catálogo cerrado.
