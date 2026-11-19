@@ -35,8 +35,8 @@ return new class extends Migration
         $this->index('sesiones', ['id_docente', 'fecha'], 'idx_sesiones_docente_fecha');
         $this->index('inscripciones', ['curso_id', 'estado'], 'idx_inscripciones_curso_estado');
         $this->index('inscripciones', ['fecha_vencimiento'], 'idx_inscripciones_vencimiento');
-        $this->index('pago_cursos', ['inscripcion_id', 'fecha_pago'], 'idx_pagos_inscripcion_fecha');
-        $this->index('pago_cursos', ['fecha_pago'], 'idx_pagos_fecha');
+        $this->index('pagos', ['inscripcion_id', 'fecha_pago'], 'idx_pagos_inscripcion_fecha');
+        $this->index('pagos', ['fecha_pago'], 'idx_pagos_fecha');
 
         $this->index('actividades', ['fecha', 'estado'], 'idx_actividades_fecha_estado');
         $this->index('actividades', ['id_ministerio', 'fecha'], 'idx_actividades_ministerio_fecha');
@@ -81,8 +81,8 @@ return new class extends Migration
             ['sesiones', 'idx_sesiones_docente_fecha'],
             ['inscripciones', 'idx_inscripciones_curso_estado'],
             ['inscripciones', 'idx_inscripciones_vencimiento'],
-            ['pago_cursos', 'idx_pagos_inscripcion_fecha'],
-            ['pago_cursos', 'idx_pagos_fecha'],
+            ['pagos', 'idx_pagos_inscripcion_fecha'],
+            ['pagos', 'idx_pagos_fecha'],
             ['actividades', 'idx_actividades_fecha_estado'],
             ['actividades', 'idx_actividades_ministerio_fecha'],
             ['seguimiento_actividades', 'idx_seguimiento_actividad_fecha'],

@@ -96,9 +96,9 @@ class DashboardController extends Controller
             : "DATE_FORMAT(%s, '%%Y-%%m')";
 
         $ingresosUltimos6 = DB::table('ingresos')
-            ->leftJoin('pago_cursos', function ($join) {
-                $join->on('pago_cursos.id', '=', 'ingresos.pago_curso_id')
-                    ->whereNull('pago_cursos.deleted_at');
+            ->leftJoin('pagos', function ($join) {
+                $join->on('pagos.id', '=', 'ingresos.pago_id')
+                    ->whereNull('pagos.deleted_at');
             })
             ->whereNull('ingresos.deleted_at')
             ->whereBetween(DB::raw(Ingreso::SQL_FECHA), [
@@ -125,9 +125,9 @@ class DashboardController extends Controller
             ->pluck('total', 'mes');
 
         $ingresosPorTipo = DB::table('ingresos')
-            ->leftJoin('pago_cursos', function ($join) {
-                $join->on('pago_cursos.id', '=', 'ingresos.pago_curso_id')
-                    ->whereNull('pago_cursos.deleted_at');
+            ->leftJoin('pagos', function ($join) {
+                $join->on('pagos.id', '=', 'ingresos.pago_id')
+                    ->whereNull('pagos.deleted_at');
             })
             ->whereNull('ingresos.deleted_at')
             ->whereBetween(DB::raw(Ingreso::SQL_FECHA), [$inicioMes, $finMes])

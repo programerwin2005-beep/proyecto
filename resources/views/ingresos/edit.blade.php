@@ -28,7 +28,8 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label for="fecha" class="form-label">Fecha</label>
-                <input id="fecha" type="date" name="fecha" class="form-control" value="{{ old('fecha', $ingreso->fecha) }}" required>
+                <input id="fecha" type="text" class="form-control" value="{{ \Carbon\Carbon::parse($ingreso->fecha)->format('d/m/Y') }}" readonly>
+                <input type="hidden" name="fecha" value="{{ \Carbon\Carbon::parse($ingreso->fecha)->format('Y-m-d') }}">
             </div>
 
             <div class="form-group">

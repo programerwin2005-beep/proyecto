@@ -13,7 +13,7 @@ class IngresoController extends Controller
 {
     public function index()
     {
-        $ingresos = Ingreso::with(['actividad', 'culto', 'pagoCurso'])->paginate(10);
+        $ingresos = Ingreso::with(['actividad', 'culto', 'pago'])->paginate(10);
 
         $totales = [
             'ingresos' => Ingreso::total(),
@@ -34,25 +34,29 @@ class IngresoController extends Controller
 
     public function store(IngresoRequest $request)
     {
-        Ingreso::create($this->conCategoria($request->validated()));
+        $datos = $this->conCategoria($request->validated());
+        // La fecha del ingreso no se puede modificar: siempre es la del día.
+        $datos['fecha'] = now()->toDateString();
+
+        Ingreso::create($datos);
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso registrado con éxito.');
     }
 
     public function show($id)
     {
-        $ingreso = Ingreso::with(['actividad', 'culto', 'pagoCurso'])->withTrashed()->findOrFail($id);
+        $ingreso = Ingreso::with(['actividad', 'culto', 'pago'])->withTrashed()->findOrFail($id);
 
         return view('ingresos.show', compact('ingreso'));
     }
 
     public function edit($id)
     {
-        $ingreso = Ingreso::with(['pagoCurso'])->withTrashed()->findOrFail($id);
+        $ingreso = Ingreso::with(['pago'])->withTrashed()->findOrFail($id);
 
-        if ($ingreso->pago_curso_id) {
+        if ($ingreso->pago_id) {
             return redirect()->route('ingresos.index')
-                ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de inscripciones.');
+                ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de Pagos.');
         }
 
         $actividades = Actividad::all();
@@ -65,12 +69,16 @@ class IngresoController extends Controller
     {
         $ingreso = Ingreso::withTrashed()->findOrFail($id);
 
-        if ($ingreso->pago_curso_id) {
+        if ($ingreso->pago_id) {
             return redirect()->route('ingresos.index')
-                ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de inscripciones.');
+                ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de Pagos.');
         }
 
-        $ingreso->update($this->conCategoria($request->validated()));
+        $datos = $this->conCategoria($request->validated());
+        // La fecha original no se modifica.
+        $datos['fecha'] = $ingreso->fecha;
+
+        $ingreso->update($datos);
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso actualizado con éxito.');
     }
@@ -97,9 +105,9 @@ class IngresoController extends Controller
     {
         $ingreso = Ingreso::findOrFail($id);
 
-        if ($ingreso->pago_curso_id) {
+        if ($ingreso->pago_id) {
             return redirect()->route('ingresos.index')
-                ->with('error', 'Este ingreso proviene de un pago de curso; elimínalo desde el módulo de inscripciones.');
+                ->with('error', 'Este ingreso proviene de un pago de curso; elimínalo desde el módulo de Pagos.');
         }
 
         $ingreso->delete();

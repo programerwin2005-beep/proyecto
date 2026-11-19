@@ -15,7 +15,7 @@ use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\LiderIglesiaController;
 use App\Http\Controllers\MiembroController;
 use App\Http\Controllers\MinisterioController;
-use App\Http\Controllers\PagoCursoController;
+use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PermisoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RoleController;
@@ -99,10 +99,13 @@ Route::middleware(['auth', 'prevent-back-history'])->group(function () {
         Route::post('cursos/{curso}/inscripciones', [InscripcionController::class, 'store'])->name('inscripciones.store');
         Route::delete('inscripciones/{inscripcion}', [InscripcionController::class, 'destroy'])->name('inscripciones.destroy');
 
-        // 7.2 Pagos de Cursos (generan Ingreso automáticamente)
-        Route::get('inscripciones/{inscripcion}/pagos/create', [PagoCursoController::class, 'create'])->name('pagos.create');
-        Route::post('inscripciones/{inscripcion}/pagos', [PagoCursoController::class, 'store'])->name('pagos.store');
-        Route::delete('pagos/{pago}', [PagoCursoController::class, 'destroy'])->name('pagos.destroy');
+        // 7.2 Pagos de Cursos (módulo propio; generan Ingreso automáticamente)
+        Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
+        Route::get('pagos/create', [PagoController::class, 'create'])->name('pagos.create');
+        Route::post('pagos', [PagoController::class, 'store'])->name('pagos.store');
+        Route::get('pagos/{pago}/edit', [PagoController::class, 'edit'])->name('pagos.edit');
+        Route::put('pagos/{pago}', [PagoController::class, 'update'])->name('pagos.update');
+        Route::delete('pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
 
         // 8. Docentes
         Route::get('docentes/{docente}/acceso', [DocenteController::class, 'acceso'])->name('docentes.acceso');
@@ -130,6 +133,8 @@ Route::middleware(['auth', 'prevent-back-history'])->group(function () {
         Route::resource('ingresos', IngresoController::class);
 
         // 12. Egresos
+        Route::get('egresos/pagar-contrato', [EgresoController::class, 'createPagoContrato'])->name('egresos.pagar-contrato');
+        Route::post('egresos/pagar-contrato', [EgresoController::class, 'storePagoContrato'])->name('egresos.pagar-contrato.store');
         Route::resource('egresos', EgresoController::class);
 
         // 13. Contratos

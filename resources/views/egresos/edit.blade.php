@@ -33,7 +33,8 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label for="fecha" class="form-label">Fecha</label>
-                <input id="fecha" type="date" name="fecha" class="form-control" value="{{ old('fecha', $egreso->fecha) }}" required>
+                <input id="fecha" type="text" class="form-control" value="{{ \Carbon\Carbon::parse($egreso->fecha)->format('d/m/Y') }}" readonly>
+                <input type="hidden" name="fecha" value="{{ \Carbon\Carbon::parse($egreso->fecha)->format('Y-m-d') }}">
             </div>
 
             <div class="form-group">
@@ -63,19 +64,7 @@
         </div>
 
         <div class="form-group">
-            <label for="id_contrato" class="form-label">Asociar a Contrato de Trabajo (Opcional)</label>
-            <select id="id_contrato" name="id_contrato" class="form-control">
-                <option value="">Ninguno...</option>
-                @foreach($contratos as $c)
-                    <option value="{{ $c->id }}" {{ old('id_contrato', $egreso->id_contrato) == $c->id ? 'selected' : '' }}>
-                        Contrato #{{ $c->id }} - {{ $c->miembro->nombre ?? 'N/A' }} (Bs {{ number_format($c->salario, 2) }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="id_lider_iglesia" class="form-label">O pagar directamente a un Líder (Opcional)</label>
+            <label for="id_lider_iglesia" class="form-label">Pagar directamente a un Líder (Opcional)</label>
             <select id="id_lider_iglesia" name="id_lider_iglesia" class="form-control">
                 <option value="">Ninguno...</option>
                 @foreach($lideres as $lider)
@@ -84,7 +73,7 @@
                     </option>
                 @endforeach
             </select>
-            <small style="color: var(--text-secondary); font-size: 12px;">Use contrato o líder directo, no ambos.</small>
+            <small style="color: var(--text-secondary); font-size: 12px;">Los pagos de contrato se registran desde el botón «Pagar Contrato».</small>
         </div>
 
         <div class="form-group">
@@ -103,21 +92,4 @@
         </div>
     </form>
 </div>
-
-<script>
-    (function () {
-        const contrato = document.getElementById('id_contrato');
-        const lider = document.getElementById('id_lider_iglesia');
-
-        if (!contrato || !lider) return;
-
-        contrato.addEventListener('change', function () {
-            if (this.value !== '') lider.value = '';
-        });
-
-        lider.addEventListener('change', function () {
-            if (this.value !== '') contrato.value = '';
-        });
-    })();
-</script>
 @endsection

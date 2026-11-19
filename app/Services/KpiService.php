@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  * Cálculo de los KPIs prioritarios del panel.
  *
  * Reglas comunes:
- * - El universo de ingresos es siempre `ingresos`; `pago_cursos` solo resuelve
+ * - El universo de ingresos es siempre `ingresos`; `pagos` solo resuelve
  *   monto/fecha cuando la migración 2026_10_21 dejó esos campos en NULL.
  * - Cada tabla unida filtra su propio `deleted_at`.
  * - Los porcentajes devuelven null cuando el denominador es cero.
@@ -529,7 +529,7 @@ final class KpiService
      */
     public function cobranza(): array
     {
-        $pagos = DB::table('pago_cursos')
+        $pagos = DB::table('pagos')
             ->select('inscripcion_id')
             ->selectRaw('SUM(monto) as pagado')
             ->whereNull('deleted_at')
@@ -838,9 +838,9 @@ final class KpiService
     private function ingresosQuery(): Builder
     {
         return DB::table('ingresos')
-            ->leftJoin('pago_cursos', function ($join) {
-                $join->on('pago_cursos.id', '=', 'ingresos.pago_curso_id')
-                    ->whereNull('pago_cursos.deleted_at');
+            ->leftJoin('pagos', function ($join) {
+                $join->on('pagos.id', '=', 'ingresos.pago_id')
+                    ->whereNull('pagos.deleted_at');
             })
             ->whereNull('ingresos.deleted_at');
     }

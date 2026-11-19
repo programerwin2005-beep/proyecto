@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\EstadoInscripcion;
 use App\Models\Curso;
+use App\Models\Ingreso;
 use App\Models\Inscripcion;
-use App\Models\PagoCurso;
+use App\Models\Pago;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InscripcionController extends Controller
@@ -45,7 +47,7 @@ class InscripcionController extends Controller
 
         $miembrosDisponibles = Inscripcion::getMiembrosDisponibles($curso->id);
 
-        $totalPagado = PagoCurso::whereIn('inscripcion_id', $inscripciones->pluck('id'))->sum('monto');
+        $totalPagado = Pago::whereIn('inscripcion_id', $inscripciones->pluck('id'))->sum('monto');
         $esperado = (float) $curso->monto_inscripcion * $inscripciones->whereNull('deleted_at')->count();
 
         return view('inscripciones.gestion', compact('curso', 'inscripciones', 'miembrosDisponibles', 'totalPagado', 'esperado'));
@@ -79,16 +81,18 @@ class InscripcionController extends Controller
             return back()->with('error', 'El curso alcanzó su cupo máximo de '.$curso->cupo_max.' inscritos.');
         }
 
-        Inscripcion::crearORestaurar(
-            [
-                'miembro_id' => $validated['miembro_id'],
-                'curso_id' => $curso->id,
-            ],
-            [
-                'fecha_inscripcion' => $validated['fecha_inscripcion'],
-                'estado' => 'Activo',
-            ]
-        );
+        DB::transaction(function () use ($curso, $validated) {
+            Inscripcion::crearORestaurar(
+                [
+                    'miembro_id' => $validated['miembro_id'],
+                    'curso_id' => $curso->id,
+                ],
+                [
+                    'fecha_inscripcion' => $validated['fecha_inscripcion'],
+                    'estado' => 'Activo',
+                ]
+            );
+        });
 
         $mensaje = $existente
             ? 'Inscripción reactivada con éxito.'
@@ -126,9 +130,19 @@ class InscripcionController extends Controller
     {
         $inscripcion = Inscripcion::findOrFail($id);
         $cursoId = $inscripcion->curso_id;
-        $inscripcion->delete();
+
+        DB::transaction(function () use ($inscripcion) {
+            // Al eliminar la inscripción se eliminan sus pagos y, con ellos,
+            // los ingresos generados.
+            foreach ($inscripcion->pagos()->withTrashed()->get() as $pago) {
+                Ingreso::where('pago_id', $pago->id)->delete();
+                $pago->delete();
+            }
+
+            $inscripcion->delete();
+        });
 
         return redirect()->route('inscripciones.gestion', $cursoId)
-            ->with('success', 'Inscripción eliminada lógicamente.');
+            ->with('success', 'Inscripción, pago e ingreso eliminados con éxito.');
     }
 }

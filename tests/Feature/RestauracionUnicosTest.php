@@ -8,7 +8,7 @@ use App\Models\Docente;
 use App\Models\Ingreso;
 use App\Models\Inscripcion;
 use App\Models\Miembro;
-use App\Models\PagoCurso;
+use App\Models\Pago;
 use App\Models\Role;
 use App\Models\Sesion;
 use App\Models\User;
@@ -198,7 +198,7 @@ class RestauracionUnicosTest extends TestCase
     {
         $inscripcion = Inscripcion::where('curso_id', $this->curso->id)->firstOrFail();
 
-        $pago = PagoCurso::create([
+        $pago = Pago::create([
             'inscripcion_id' => $inscripcion->id,
             'monto' => 50,
             'fecha_pago' => now()->toDateString(),
@@ -207,21 +207,21 @@ class RestauracionUnicosTest extends TestCase
         ]);
 
         $ingreso = Ingreso::crearORestaurar(
-            ['pago_curso_id' => $pago->id],
+            ['pago_id' => $pago->id],
             ['tipo' => 'Inscripción Curso: '.$this->curso->nombre]
         );
 
         $ingreso->delete();
 
         $restaurado = Ingreso::crearORestaurar(
-            ['pago_curso_id' => $pago->id],
+            ['pago_id' => $pago->id],
             ['tipo' => 'Inscripción Curso: '.$this->curso->nombre]
         );
 
         $this->assertSame($ingreso->id, $restaurado->id);
         $this->assertSame(
             1,
-            Ingreso::withTrashed()->where('pago_curso_id', $pago->id)->count()
+            Ingreso::withTrashed()->where('pago_id', $pago->id)->count()
         );
         $this->assertNotSoftDeleted('ingresos', ['id' => $ingreso->id]);
     }

@@ -32,7 +32,7 @@ return new class extends Migration
             'inscripciones' => ['miembro_id', 'curso_id'],
             'role_user' => ['user_id', 'role_id'],
             'docentes' => ['id_miembro'],
-            'ingresos' => ['pago_curso_id'],
+            'ingresos' => ['pago_id'],
         ];
 
         $problemas = [];

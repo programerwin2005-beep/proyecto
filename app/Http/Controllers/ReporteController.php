@@ -98,7 +98,7 @@ class ReporteController extends Controller
         $desde = $request->input('desde', now()->startOfMonth()->toDateString());
         $hasta = $request->input('hasta', now()->endOfMonth()->toDateString());
 
-        $ingresos = Ingreso::with('pagoCurso')
+        $ingresos = Ingreso::with('pago')
             ->conPago()
             ->whereBetween(DB::raw(Ingreso::SQL_FECHA), [$desde, $hasta])
             ->get();

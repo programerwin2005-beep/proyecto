@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoEgreso;
 use App\Http\Requests\EgresoRequest;
 use App\Models\CategoriaFinanciera;
 use App\Models\Contrato;
 use App\Models\Egreso;
 use App\Models\Ingreso;
 use App\Models\LiderIglesia;
+use Illuminate\Http\Request;
 
 class EgresoController extends Controller
 {
@@ -38,11 +40,10 @@ class EgresoController extends Controller
 
     public function create()
     {
-        $contratos = Contrato::with('miembro')->get();
         $lideres = LiderIglesia::with('cargo')->get()->sortBy('nombre')->values();
         $saldoDisponible = $this->saldoDisponible();
 
-        return view('egresos.create', compact('contratos', 'lideres', 'saldoDisponible'));
+        return view('egresos.create', compact('lideres', 'saldoDisponible'));
     }
 
     public function store(EgresoRequest $request)
@@ -54,9 +55,64 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        Egreso::create($this->conCategoria($request->validated()));
+        $datos = $this->conCategoria($request->validated());
+        // Los pagos de contrato solo se registran desde «Pagar Contrato».
+        unset($datos['id_contrato']);
+        // La fecha del egreso no se puede modificar: siempre es la del día.
+        $datos['fecha'] = now()->toDateString();
+
+        Egreso::create($datos);
 
         return redirect()->route('egresos.index')->with('success', 'Egreso registrado con éxito.');
+    }
+
+    public function createPagoContrato()
+    {
+        $contratos = Contrato::with(['miembro', 'lider.cargo'])
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio')
+            ->get();
+
+        $saldoDisponible = $this->saldoDisponible();
+
+        return view('egresos.pagar-contrato', compact('contratos', 'saldoDisponible'));
+    }
+
+    public function storePagoContrato(Request $request)
+    {
+        $validated = $request->validate([
+            'id_contrato' => ['required', 'exists:contratos,id'],
+            'monto' => ['required', 'numeric', 'min:0.01'],
+            'comprobante' => ['nullable', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string'],
+        ]);
+
+        $saldo = $this->saldoDisponible();
+
+        if ((float) $validated['monto'] > $saldo) {
+            return back()->withErrors(['monto' => 'No hay saldo suficiente. Saldo disponible: Bs '.number_format($saldo, 2).'.'])
+                ->withInput();
+        }
+
+        $contrato = Contrato::with(['miembro', 'lider'])->findOrFail($validated['id_contrato']);
+
+        $responsable = $contrato->miembro?->nombre
+            ?? $contrato->lider?->nombre
+            ?? 'Contrato #'.$contrato->id;
+
+        $datos = [
+            'id_contrato' => $contrato->id,
+            'monto' => $validated['monto'],
+            'fecha' => now()->toDateString(),
+            'tipo_egreso' => TipoEgreso::Salarios->value,
+            'responsable' => $responsable,
+            'comprobante' => $validated['comprobante'] ?? null,
+            'descripcion' => ($validated['descripcion'] ?? null) ?: 'Pago de contrato #'.$contrato->id.' - '.$responsable,
+        ];
+
+        Egreso::create($this->conCategoria($datos));
+
+        return redirect()->route('egresos.index')->with('success', 'Pago de contrato registrado con éxito.');
     }
 
     public function show($id)
@@ -69,11 +125,10 @@ class EgresoController extends Controller
     public function edit($id)
     {
         $egreso = Egreso::withTrashed()->findOrFail($id);
-        $contratos = Contrato::with('miembro')->get();
         $lideres = LiderIglesia::with('cargo')->get()->sortBy('nombre')->values();
         $saldoDisponible = $this->saldoDisponible($egreso->id);
 
-        return view('egresos.edit', compact('egreso', 'contratos', 'lideres', 'saldoDisponible'));
+        return view('egresos.edit', compact('egreso', 'lideres', 'saldoDisponible'));
     }
 
     public function update(EgresoRequest $request, $id)
@@ -86,7 +141,12 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        $egreso->update($this->conCategoria($request->validated()));
+        $datos = $this->conCategoria($request->validated());
+        // La relación con contrato no se modifica desde el egreso normal.
+        unset($datos['id_contrato']);
+        // La fecha original no se modifica.
+        $datos['fecha'] = $egreso->fecha;
+        $egreso->update($datos);
 
         return redirect()->route('egresos.index')->with('success', 'Egreso actualizado con éxito.');
     }

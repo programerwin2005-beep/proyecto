@@ -110,10 +110,8 @@ class EgresoCreateCajaBlancaTest extends TestCase
             ->assertOk()
             ->assertViewIs('egresos.create')
             ->assertViewHas('saldoDisponible', 700.0)
-            ->assertViewHas('contratos', fn ($contratos) => $contratos->count() === 1)
             ->assertViewHas('lideres', fn ($lideres) => $lideres->pluck('nombre')->all() === ['Ana Torres', 'Zacarías Pérez'])
-            ->assertSee('Bs 700.00')
-            ->assertSee('María Gómez');
+            ->assertSee('Bs 700.00');
     }
 
     // CB-EC02: sin datos, el saldo es cero y las colecciones están vacías
@@ -124,7 +122,6 @@ class EgresoCreateCajaBlancaTest extends TestCase
             ->assertOk()
             ->assertViewIs('egresos.create')
             ->assertViewHas('saldoDisponible', 0.0)
-            ->assertViewHas('contratos', fn ($contratos) => $contratos->isEmpty())
             ->assertViewHas('lideres', fn ($lideres) => $lideres->isEmpty())
             ->assertSee('Bs 0.00');
     }
@@ -132,16 +129,13 @@ class EgresoCreateCajaBlancaTest extends TestCase
     // CB-EC03: los registros eliminados lógicamente no se listan (C1, C2)
     public function test_cb_ec03_create_excluye_eliminados(): void
     {
-        $contrato = $this->contrato($this->miembro('Miembro Eliminado'));
         $lider = $this->lider('Líder Eliminado');
 
-        $contrato->delete();
         $lider->delete();
 
         $this->actingAs($this->admin)
             ->get(route('egresos.create'))
             ->assertOk()
-            ->assertViewHas('contratos', fn ($contratos) => $contratos->isEmpty())
             ->assertViewHas('lideres', fn ($lideres) => $lideres->isEmpty());
     }
 

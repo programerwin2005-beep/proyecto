@@ -17,7 +17,7 @@ return new class extends Migration
         });
 
         Schema::table('ingresos', function (Blueprint $table) {
-            $table->unique('pago_curso_id', 'ingresos_pago_curso_id_unique');
+            $table->unique('pago_id', 'ingresos_pago_id_unique');
         });
 
         Schema::table('role_user', function (Blueprint $table) {
@@ -28,8 +28,8 @@ return new class extends Migration
             $table->unique(['miembro_id', 'curso_id'], 'inscripciones_miembro_id_curso_id_unique');
         });
 
-        // 2. Opción A: pago_cursos es la única fuente de monto, fecha y método de pago.
-        //    El ingreso generado por un pago guarda solo pago_curso_id.
+        // 2. Opción A: pagos es la única fuente de monto, fecha y método de pago.
+        //    El ingreso generado por un pago guarda solo pago_id.
         Schema::table('ingresos', function (Blueprint $table) {
             $table->decimal('monto_total', 12, 2)->nullable()->change();
             $table->date('fecha')->nullable()->change();
@@ -37,9 +37,9 @@ return new class extends Migration
         });
 
         // Los ingresos ya generados por un pago dejan de duplicar los importes:
-        // desde ahora se leen de pago_cursos con COALESCE.
+        // desde ahora se leen de pagos con COALESCE.
         DB::table('ingresos')
-            ->whereNotNull('pago_curso_id')
+            ->whereNotNull('pago_id')
             ->update([
                 'monto_total' => null,
                 'fecha' => null,
@@ -89,7 +89,7 @@ return new class extends Migration
         });
 
         Schema::table('ingresos', function (Blueprint $table) {
-            $table->dropUnique('ingresos_pago_curso_id_unique');
+            $table->dropUnique('ingresos_pago_id_unique');
         });
 
         Schema::table('docentes', function (Blueprint $table) {
@@ -104,7 +104,7 @@ return new class extends Migration
     {
         $checks = [
             'docentes' => ['id_miembro'],
-            'ingresos' => ['pago_curso_id'],
+            'ingresos' => ['pago_id'],
             'role_user' => ['user_id', 'role_id'],
             'inscripciones' => ['miembro_id', 'curso_id'],
         ];

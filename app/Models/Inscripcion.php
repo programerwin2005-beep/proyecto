@@ -42,7 +42,7 @@ class Inscripcion extends Model
 
     public function pagos(): HasMany
     {
-        return $this->hasMany(PagoCurso::class);
+        return $this->hasMany(Pago::class);
     }
 
     public function getMontoPagadoAttribute(): float

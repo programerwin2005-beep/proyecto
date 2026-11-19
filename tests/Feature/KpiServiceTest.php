@@ -128,7 +128,7 @@ class KpiServiceTest extends TestCase
         ]);
 
         foreach ([[$inscripcion1, 100.0], [$inscripcion2, 40.0]] as [$inscripcion, $monto]) {
-            DB::table('pago_cursos')->insert([
+            DB::table('pagos')->insert([
                 'inscripcion_id' => $inscripcion,
                 'monto' => $monto,
                 'fecha_pago' => $hoy,

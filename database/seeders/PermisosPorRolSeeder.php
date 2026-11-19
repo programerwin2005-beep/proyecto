@@ -15,7 +15,7 @@ class PermisosPorRolSeeder extends Seeder
         'Administrador' => 'all',
         'Secretario' => [
             'cargos', 'lideres', 'miembros', 'ministerios', 'actividades',
-            'seguimiento', 'cursos', 'docentes', 'inscripciones', 'sesiones', 'asistencia',
+            'seguimiento', 'cursos', 'docentes', 'inscripciones', 'pagos', 'sesiones', 'asistencia',
         ],
         'Tesorero' => ['cultos', 'ingresos', 'egresos', 'contratos'],
         // El docente solo consulta sus sesiones y registra asistencia.

@@ -34,6 +34,7 @@ $categorias = [
         'actividades' => ['label' => 'Actividades', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
         'seguimiento' => ['label' => 'Seguimiento', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
         'cursos' => ['label' => 'Cursos', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
+        'pagos' => ['label' => 'Pagos', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
         'docentes' => ['label' => 'Docentes', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
         'contratos' => ['label' => 'Contratos', 'acciones' => ['ver', 'crear', 'editar', 'eliminar', 'buscar']],
     ],
@@ -74,6 +75,7 @@ $recursos = [
     'actividades' => 'actividades',
     'seguimiento' => 'seguimiento',
     'cursos' => 'cursos',
+    'pagos' => 'pagos',
     'docentes' => 'docentes',
     'contratos' => 'contratos',
     'inscripciones' => 'inscripciones',
@@ -104,10 +106,13 @@ $rutas += [
     'docentes.acceso' => ['docentes', 'editar'],
     'docentes.acceso.store' => ['docentes', 'editar'],
 
-    // Pagos (parte del módulo Inscripciones)
-    'pagos.create' => ['inscripciones', 'crear'],
-    'pagos.store' => ['inscripciones', 'crear'],
-    'pagos.destroy' => ['inscripciones', 'eliminar'],
+    // Pagos de cursos (módulo propio)
+    'pagos.index' => ['pagos', 'ver'],
+    'pagos.create' => ['pagos', 'crear'],
+    'pagos.store' => ['pagos', 'crear'],
+    'pagos.edit' => ['pagos', 'editar'],
+    'pagos.update' => ['pagos', 'editar'],
+    'pagos.destroy' => ['pagos', 'eliminar'],
 
     // Sesiones
     'sesiones.generar' => ['sesiones', 'crear'],
@@ -121,6 +126,10 @@ $rutas += [
 
     // Contratos
     'contratos.renovar' => ['contratos', 'editar'],
+
+    // Pago de contrato desde Egresos
+    'egresos.pagar-contrato' => ['egresos', 'crear'],
+    'egresos.pagar-contrato.store' => ['egresos', 'crear'],
 
     // Permisos
     'permisos.index' => ['permisos', 'ver'],
@@ -139,5 +148,5 @@ return [
     'rutas' => $rutas,
 
     // Módulos cuyo listado tiene buscador (?q=). Requieren el permiso "buscar".
-    'modulos_con_busqueda' => ['miembros', 'inscripciones', 'asistencia', 'contratos'],
+    'modulos_con_busqueda' => ['miembros', 'inscripciones', 'pagos', 'asistencia', 'contratos'],
 ];

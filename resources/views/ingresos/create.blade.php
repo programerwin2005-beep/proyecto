@@ -29,7 +29,8 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label for="fecha" class="form-label">Fecha</label>
-                <input id="fecha" type="date" name="fecha" class="form-control" value="{{ old('fecha', date('Y-m-d')) }}" required>
+                <input id="fecha" type="text" class="form-control" value="{{ now()->format('d/m/Y') }}" readonly>
+                <input type="hidden" name="fecha" value="{{ now()->toDateString() }}">
             </div>
             
             <div class="form-group">

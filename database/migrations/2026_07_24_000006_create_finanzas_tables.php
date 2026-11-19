@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pago_cursos', function (Blueprint $table) {
+        Schema::create('pagos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('inscripcion_id')->constrained('inscripciones')->onDelete('cascade');
             $table->decimal('monto', 10, 2);
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_actividad')->nullable()->constrained('actividades')->nullOnDelete();
             $table->foreignId('id_culto')->nullable()->constrained('cultos')->nullOnDelete();
-            $table->foreignId('pago_curso_id')->nullable()->constrained('pago_cursos')->nullOnDelete();
+            $table->foreignId('pago_id')->nullable()->constrained('pagos')->nullOnDelete();
             $table->decimal('monto_total', 12, 2);
             $table->date('fecha');
             $table->string('tipo'); // Diezmo, Ofrenda, Donación, Inscripción, etc.
@@ -51,6 +51,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('egresos');
         Schema::dropIfExists('ingresos');
-        Schema::dropIfExists('pago_cursos');
+        Schema::dropIfExists('pagos');
     }
 };

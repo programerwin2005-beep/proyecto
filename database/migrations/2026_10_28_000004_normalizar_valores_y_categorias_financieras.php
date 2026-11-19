@@ -42,7 +42,7 @@ return new class extends Migration
 
         $this->normalizar('contratos', 'tipo_compensacion', $this->mapa(TipoCompensacion::valores()));
 
-        $this->normalizar('pago_cursos', 'metodo_pago', $this->mapa(MetodoPago::valores()));
+        $this->normalizar('pagos', 'metodo_pago', $this->mapa(MetodoPago::valores()));
 
         $this->normalizar('ingresos', 'metodo_pago', $this->mapa(MetodoPago::valores()));
 
