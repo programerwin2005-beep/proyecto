@@ -12,9 +12,20 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::paginate(10);
+        $users = User::with('roles')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('name', 'like', '%'.$termino.'%')
+                        ->orWhere('email', 'like', '%'.$termino.'%');
+                });
+            })
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('users.index', compact('users'));
     }
@@ -92,6 +103,6 @@ class UserController extends Controller
         }
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', 'Usuario eliminado lógicamente.');
+        return redirect()->route('users.index')->with('success', 'Usuario eliminado exitosamente.');
     }
 }

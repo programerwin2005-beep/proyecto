@@ -96,6 +96,27 @@ class EgresoCajaBlancaTest extends TestCase
             ->assertSee(self::RESPONSABLE);
     }
 
+    // CB-E01b: index() ordena del más nuevo al más antiguo
+    public function test_cb_e01b_index_ordena_egresos_del_mas_nuevo_al_mas_antiguo(): void
+    {
+        $antiguo = $this->egreso([
+            'fecha' => now()->subDays(3)->toDateString(),
+            'descripcion' => 'Egreso Antiguo',
+        ]);
+        $nuevo = $this->egreso([
+            'fecha' => now()->toDateString(),
+            'descripcion' => 'Egreso Nuevo',
+        ]);
+
+        $respuesta = $this->actingAs($this->admin)->get(route('egresos.index'));
+
+        $respuesta->assertOk();
+        $this->assertSame(
+            [$nuevo->id, $antiguo->id],
+            $respuesta->viewData('egresos')->pluck('id')->all()
+        );
+    }
+
     // CB-E02: create() calcula el saldo sin ignorar egresos
     public function test_cb_e02_create_muestra_saldo_disponible(): void
     {

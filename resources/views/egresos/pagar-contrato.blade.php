@@ -46,8 +46,17 @@
         </div>
 
         <div class="form-group">
+            <label for="periodo_inicio" class="form-label">Mes a Pagar</label>
+            <select id="periodo_inicio" name="periodo_inicio" class="form-control" required>
+                <option value="">Seleccione un contrato...</option>
+            </select>
+            <small id="periodo_detalle" style="display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.85rem;"></small>
+        </div>
+
+        <div class="form-group">
             <label for="monto" class="form-label">Monto a Pagar (Bs)</label>
             <input id="monto" type="number" step="0.01" min="0.01" name="monto" class="form-control" value="{{ old('monto') }}" required autocomplete="off">
+            <small style="display: block; margin-top: 6px; color: var(--text-secondary); font-size: 0.85rem;">Puede pagar una parte del mes (cuota); el saldo pendiente seguirá visible.</small>
         </div>
 
         <div class="form-group">
@@ -77,17 +86,67 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const contrato = document.getElementById('id_contrato');
+        const periodo = document.getElementById('periodo_inicio');
+        const detalle = document.getElementById('periodo_detalle');
         const monto = document.getElementById('monto');
-        if (!contrato || !monto) return;
+        if (!contrato || !periodo || !monto) return;
+
+        const periodos = @json($periodosPorContrato);
+        let periodoPrevio = @json(old('periodo_inicio'));
+
+        function actualizarDetalle() {
+            const opcion = periodo.options[periodo.selectedIndex];
+            const restante = opcion ? parseFloat(opcion.dataset.restante || '0') : 0;
+
+            if (!periodo.value) {
+                detalle.textContent = '';
+                monto.removeAttribute('max');
+                return;
+            }
+
+            detalle.textContent = 'Falta por pagar de este mes: Bs ' + restante.toFixed(2);
+            monto.max = restante.toFixed(2);
+            monto.value = restante.toFixed(2);
+        }
+
+        function actualizarPeriodos() {
+            const lista = periodos[contrato.value] || [];
+            periodo.innerHTML = '';
+            detalle.textContent = '';
+
+            if (!lista.length) {
+                periodo.innerHTML = '<option value="">Sin meses pendientes</option>';
+                detalle.textContent = 'Este contrato no tiene meses pendientes de pago.';
+                monto.value = '';
+                monto.disabled = true;
+                return;
+            }
+
+            monto.disabled = false;
+            periodo.innerHTML = '<option value="">Seleccione el mes...</option>';
+
+            lista.forEach(function (p) {
+                const opcion = document.createElement('option');
+                opcion.value = p.inicio;
+                opcion.textContent = p.etiqueta + ' (falta Bs ' + Number(p.restante).toFixed(2) + ')';
+                opcion.dataset.restante = p.restante;
+                if (periodoPrevio === p.inicio) {
+                    opcion.selected = true;
+                }
+                periodo.appendChild(opcion);
+            });
+
+            actualizarDetalle();
+        }
 
         contrato.addEventListener('change', function () {
-            const opcion = this.options[this.selectedIndex];
-            const salario = opcion ? parseFloat(opcion.dataset.salario || '0') : 0;
-
-            if (salario > 0 && !monto.value) {
-                monto.value = salario.toFixed(2);
-            }
+            periodoPrevio = null;
+            actualizarPeriodos();
         });
+
+        periodo.addEventListener('change', actualizarDetalle);
+
+        actualizarPeriodos();
     });
 </script>
 @endsection

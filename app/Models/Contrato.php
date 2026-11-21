@@ -67,6 +67,118 @@ class Contrato extends Model
         return $this->hasMany(Egreso::class, 'id_contrato');
     }
 
+    /**
+     * Periodos mensuales del contrato. Cada mes inicia el mismo día en que
+     * empezó el contrato y termina el día anterior del mes siguiente.
+     *
+     * @return \Illuminate\Support\Collection<int, array{inicio: Carbon, fin: Carbon, monto: float, pagado: float, restante: float, completo: bool}>
+     */
+    public function periodosPago(?Carbon $hasta = null): \Illuminate\Support\Collection
+    {
+        $hoy = ($hasta ?: now())->copy()->startOfDay();
+        $inicioContrato = Carbon::parse($this->fecha_inicio)->startOfDay();
+
+        if ($inicioContrato->gt($hoy)) {
+            return collect();
+        }
+
+        if ($this->fecha_fin) {
+            $finContrato = Carbon::parse($this->fecha_fin)->startOfDay();
+
+            if ($finContrato->lt($hoy)) {
+                $hoy = $finContrato;
+            }
+        }
+
+        $egresos = $this->relationLoaded('egresos')
+            ? $this->egresos
+            : $this->egresos()->get();
+
+        $monto = (float) $this->salario;
+        $periodos = collect();
+        $numero = 0;
+
+        while (true) {
+            $inicio = $inicioContrato->copy()->addMonthsNoOverflow($numero);
+
+            if ($inicio->gt($hoy)) {
+                break;
+            }
+
+            $fin = $inicioContrato->copy()->addMonthsNoOverflow($numero + 1)->subDay();
+
+            $pagado = (float) $egresos
+                ->filter(fn (Egreso $egreso) => $this->egresoPerteneceAlPeriodo($egreso, $inicio, $fin))
+                ->sum('monto');
+
+            $periodos->push([
+                'inicio' => $inicio->copy(),
+                'fin' => $fin,
+                'monto' => $monto,
+                'pagado' => $pagado,
+                'restante' => max(0.0, round($monto - $pagado, 2)),
+                'completo' => $pagado + 0.005 >= $monto,
+            ]);
+
+            $numero++;
+        }
+
+        return $periodos;
+    }
+
+    /**
+     * Periodo mensual que contiene la fecha indicada (por defecto hoy).
+     *
+     * @return array{inicio: Carbon, fin: Carbon, monto: float, pagado: float, restante: float, completo: bool}|null
+     */
+    public function periodoDelDia(?Carbon $dia = null): ?array
+    {
+        $dia = ($dia ?: now())->copy()->startOfDay();
+
+        return $this->periodosPago($dia)->last();
+    }
+
+    /**
+     * Periodo que empieza exactamente en la fecha indicada.
+     *
+     * @return array{inicio: Carbon, fin: Carbon, monto: float, pagado: float, restante: float, completo: bool}|null
+     */
+    public function periodoPorInicio(string $fecha): ?array
+    {
+        return $this->periodosPago()
+            ->first(fn (array $periodo) => $periodo['inicio']->toDateString() === $fecha);
+    }
+
+    /**
+     * El contrato ya cumplió su vigencia (fecha de fin anterior a hoy).
+     */
+    public function contratoCumplido(): bool
+    {
+        return $this->fecha_fin !== null
+            && Carbon::parse($this->fecha_fin)->startOfDay()->lt(now()->startOfDay());
+    }
+
+    /**
+     * Indica si queda al menos un mes del contrato sin completar su pago.
+     */
+    public function tieneMesesPendientes(): bool
+    {
+        return $this->periodosPago()->contains(fn (array $periodo) => ! $periodo['completo']);
+    }
+
+    private function egresoPerteneceAlPeriodo(Egreso $egreso, Carbon $inicio, Carbon $fin): bool
+    {
+        if ($egreso->deleted_at !== null) {
+            return false;
+        }
+
+        if ($egreso->periodo_inicio) {
+            return Carbon::parse($egreso->periodo_inicio)->isSameDay($inicio);
+        }
+
+        return Carbon::parse($egreso->fecha)->betweenIncluded($inicio, $fin);
+    }
+
     public function getVigenciaAttribute(): string
     {
         $hoy = now()->startOfDay();

@@ -45,6 +45,7 @@ class AsistenciaController extends Controller
     public function store(Request $request, Sesion $sesion)
     {
         $this->autorizarSesion($sesion);
+        $this->validarSesionNoFutura($sesion);
 
         $validated = $request->validate([
             'asistencia' => 'required|array',
@@ -85,6 +86,7 @@ class AsistenciaController extends Controller
     public function marcarTodos(Sesion $sesion)
     {
         $this->autorizarSesion($sesion);
+        $this->validarSesionNoFutura($sesion);
 
         $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
             ->whereNull('deleted_at')
@@ -105,52 +107,78 @@ class AsistenciaController extends Controller
 
     public function registrar(Request $request)
     {
-        $cursosQuery = Curso::whereHas('sesiones', fn ($q) => $q->whereNull('deleted_at'));
+        $sesion = $request->filled('sesion_id')
+            ? Sesion::with('curso', 'docente.miembro')->find($request->sesion_id)
+            : null;
+
+        if ($sesion) {
+            $this->autorizarSesion($sesion);
+            $this->validarSesionNoFutura($sesion);
+        }
+
+        $sesionSeleccionadaId = $sesion?->id;
+
+        // Solo se ofrecen sesiones ya realizadas (no futuras) y sin asistencia
+        // registrada. La sesión que se está consultando o editando se conserva
+        // aunque ya la tenga.
+        $filtrarSesiones = function ($query) use ($sesionSeleccionadaId) {
+            $query->whereNull('deleted_at')
+                ->whereDate('fecha', '<=', now()->toDateString())
+                ->where(function ($sub) use ($sesionSeleccionadaId) {
+                    $sub->whereDoesntHave('asistencias');
+
+                    if ($sesionSeleccionadaId) {
+                        $sub->orWhereKey($sesionSeleccionadaId);
+                    }
+                })
+                ->orderBy('fecha');
+        };
+
+        $cursosQuery = Curso::query();
 
         if (auth()->user()->esDocente()) {
             $docente = auth()->user()->docente;
 
             if ($docente && $docente->activo) {
                 $cursosQuery->paraDocente($docente->id)
-                    ->with(['sesiones' => fn ($q) => $q->paraDocente($docente->id)
-                        ->whereNull('deleted_at')
-                        ->orderBy('fecha')]);
+                    ->whereHas('sesiones', function ($q) use ($docente, $filtrarSesiones) {
+                        $q->paraDocente($docente->id);
+                        $filtrarSesiones($q);
+                    })
+                    ->with(['sesiones' => function ($q) use ($docente, $filtrarSesiones) {
+                        $q->paraDocente($docente->id);
+                        $filtrarSesiones($q);
+                    }]);
             } else {
                 $cursosQuery->whereRaw('1 = 0')->with('sesiones');
             }
         } else {
-            $cursosQuery->with(['sesiones' => fn ($q) => $q->whereNull('deleted_at')->orderBy('fecha')]);
+            $cursosQuery->whereHas('sesiones', $filtrarSesiones)
+                ->with(['sesiones' => $filtrarSesiones]);
         }
 
         $cursos = $cursosQuery->orderBy('nombre')->get();
 
-        $sesion = null;
         $inscritos = collect();
         $asistencias = collect();
         $resumen = ['Presente' => 0, 'Ausente' => 0, 'Tardanza' => 0, 'Justificado' => 0];
 
-        if ($request->filled('sesion_id')) {
-            $sesion = Sesion::with('curso', 'docente.miembro')->find($request->sesion_id);
+        if ($sesion) {
+            $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
+                ->whereNull('deleted_at')
+                ->with('miembro')
+                ->get();
 
-            if ($sesion) {
-                $this->autorizarSesion($sesion);
+            $asistencias = Asistencia::where('sesion_id', $sesion->id)
+                ->get()
+                ->keyBy('miembro_id');
 
-                $inscritos = Inscripcion::where('curso_id', $sesion->id_curso)
-                    ->whereNull('deleted_at')
-                    ->with('miembro')
-                    ->get();
-
-                $asistencias = Asistencia::where('sesion_id', $sesion->id)
-                    ->get()
-                    ->keyBy('miembro_id');
-
-                $resumen = [
-                    'Presente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Presente)->count(),
-                    'Ausente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Ausente)->count(),
-                    'Tardanza' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Tardanza)->count(),
-                    'Justificado' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Justificado)->count(),
-                ];
-            }
+            $resumen = [
+                'Presente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Presente)->count(),
+                'Ausente' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Ausente)->count(),
+                'Tardanza' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Tardanza)->count(),
+                'Justificado' => $asistencias->filter(fn ($a) => $a->estado === EstadoAsistencia::Justificado)->count(),
+            ];
         }
 
         return view('asistencia.registrar', compact('cursos', 'sesion', 'inscritos', 'asistencias', 'resumen'));
@@ -212,6 +240,18 @@ class AsistenciaController extends Controller
         }
 
         return $query->get();
+    }
+
+    /**
+     * Impide registrar asistencia de sesiones con fecha futura.
+     */
+    private function validarSesionNoFutura(Sesion $sesion): void
+    {
+        abort_if(
+            \Carbon\Carbon::parse($sesion->fecha)->startOfDay()->gt(now()->startOfDay()),
+            403,
+            'No se puede registrar asistencia de una fecha futura.'
+        );
     }
 
     /**

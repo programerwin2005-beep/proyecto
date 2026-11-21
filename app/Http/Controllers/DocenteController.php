@@ -15,9 +15,24 @@ use Illuminate\Validation\Rule;
 
 class DocenteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $docentes = Docente::with(['miembro', 'user'])->paginate(10);
+        $docentes = Docente::with(['miembro', 'user'])
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('especialidad', 'like', '%'.$termino.'%')
+                        ->orWhere('titulo', 'like', '%'.$termino.'%')
+                        ->orWhereHas('miembro', function ($m) use ($termino) {
+                            $m->where('nombre', 'like', '%'.$termino.'%')
+                                ->orWhere('email', 'like', '%'.$termino.'%');
+                        });
+                });
+            })
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('docentes.index', compact('docentes'));
     }
@@ -174,6 +189,6 @@ class DocenteController extends Controller
             $docente->delete();
         });
 
-        return redirect()->route('docentes.index')->with('success', 'Docente eliminado lógicamente.');
+        return redirect()->route('docentes.index')->with('success', 'Docente eliminado exitosamente.');
     }
 }

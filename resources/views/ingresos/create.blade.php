@@ -53,18 +53,6 @@
         </div>
 
         <div class="form-group">
-            <label for="id_actividad" class="form-label">Asociar a Actividad (Opcional)</label>
-            <select id="id_actividad" name="id_actividad" class="form-control">
-                <option value="">Ninguna...</option>
-                @foreach($actividades as $act)
-
-                    <option value="{{ $act->id }}" {{ old('id_actividad') == $act->id ? 'selected' : '' }}>{{ $act->nombre }}</option>
-                
-@endforeach
-            </select>
-        </div>
-
-        <div class="form-group">
             <label for="id_culto" class="form-label">Asociar a Culto (Opcional)</label>
             <select id="id_culto" name="id_culto" class="form-control">
                 <option value="">Ninguno...</option>

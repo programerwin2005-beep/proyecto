@@ -7,14 +7,27 @@ use App\Models\LiderIglesia;
 use App\Models\Miembro;
 use App\Models\Ministerio;
 use App\Support\VinculoPivote;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class MinisterioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $ministerios = Ministerio::with('lider.cargo')->paginate(10);
+        $ministerios = Ministerio::with('lider.cargo')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('descripcion', 'like', '%'.$termino.'%')
+                        ->orWhereHas('lider', fn ($l) => $l->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('ministerios.index', compact('ministerios'));
     }
@@ -83,7 +96,7 @@ class MinisterioController extends Controller
         $ministerio = Ministerio::findOrFail($id);
         $ministerio->delete();
 
-        return redirect()->route('ministerios.index')->with('success', 'Ministerio eliminado lógicamente.');
+        return redirect()->route('ministerios.index')->with('success', 'Ministerio eliminado exitosamente.');
     }
 
     /**

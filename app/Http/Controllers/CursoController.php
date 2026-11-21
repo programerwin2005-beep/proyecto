@@ -5,12 +5,21 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CursoRequest;
 use App\Models\Curso;
 use App\Models\Inscripcion;
+use Illuminate\Http\Request;
 
 class CursoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $cursos = Curso::paginate(10);
+        $cursos = Curso::query()
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where('nombre', 'like', '%'.$termino.'%');
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('cursos.index', compact('cursos'));
     }
@@ -72,6 +81,6 @@ class CursoController extends Controller
         $curso = Curso::findOrFail($id);
         $curso->delete();
 
-        return redirect()->route('cursos.index')->with('success', 'Curso eliminado lógicamente.');
+        return redirect()->route('cursos.index')->with('success', 'Curso eliminado exitosamente.');
     }
 }

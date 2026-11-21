@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sesion extends Model
@@ -30,6 +31,11 @@ class Sesion extends Model
     public function docente(): BelongsTo
     {
         return $this->belongsTo(Docente::class, 'id_docente');
+    }
+
+    public function asistencias(): HasMany
+    {
+        return $this->hasMany(Asistencia::class, 'sesion_id');
     }
 
     public function miembrosAsistencia(): BelongsToMany

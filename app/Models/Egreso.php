@@ -21,6 +21,7 @@ class Egreso extends Model
         'tipo_egreso',
         'monto',
         'fecha',
+        'periodo_inicio',
         'descripcion',
         'responsable',
         'comprobante',
@@ -30,6 +31,7 @@ class Egreso extends Model
     {
         return [
             'tipo_egreso' => EnumTolerante::class.':'.TipoEgreso::class,
+            'periodo_inicio' => 'date',
         ];
     }
 

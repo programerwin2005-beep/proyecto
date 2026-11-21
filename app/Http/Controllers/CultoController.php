@@ -11,9 +11,21 @@ use Illuminate\Validation\Rule;
 
 class CultoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $cultos = Culto::with('liderIglesia')->paginate(10);
+        $cultos = Culto::with('liderIglesia')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('descripcion', 'like', '%'.$termino.'%')
+                        ->orWhereHas('liderIglesia', fn ($l) => $l->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('cultos.index', compact('cultos'));
     }
@@ -77,6 +89,6 @@ class CultoController extends Controller
         $culto = Culto::findOrFail($id);
         $culto->delete();
 
-        return redirect()->route('cultos.index')->with('success', 'Culto eliminado lógicamente.');
+        return redirect()->route('cultos.index')->with('success', 'Culto eliminado exitosamente.');
     }
 }

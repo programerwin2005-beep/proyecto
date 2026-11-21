@@ -130,6 +130,8 @@ Route::middleware(['auth', 'prevent-back-history'])->group(function () {
         Route::resource('cultos', CultoController::class);
 
         // 11. Ingresos
+        Route::get('ingresos/actividad', [IngresoController::class, 'createActividad'])->name('ingresos.actividad.create');
+        Route::post('ingresos/actividad', [IngresoController::class, 'storeActividad'])->name('ingresos.actividad.store');
         Route::resource('ingresos', IngresoController::class);
 
         // 12. Egresos

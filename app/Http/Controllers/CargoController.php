@@ -4,13 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CargoRequest;
 use App\Models\Cargo;
+use Illuminate\Http\Request;
 
 class CargoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // Paginación y soporte para ver elementos eliminados
-        $cargos = Cargo::paginate(10);
+        $cargos = Cargo::query()
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('descripcion', 'like', '%'.$termino.'%');
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('cargos.index', compact('cargos'));
     }
@@ -54,7 +66,7 @@ class CargoController extends Controller
         $cargo = Cargo::findOrFail($id);
         $cargo->delete(); // Borrado lógico
 
-        return redirect()->route('cargos.index')->with('success', 'Cargo eliminado lógicamente.');
+        return redirect()->route('cargos.index')->with('success', 'Cargo eliminado exitosamente.');
     }
 
 }

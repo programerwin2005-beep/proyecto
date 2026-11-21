@@ -5,6 +5,13 @@
 @section('content')
 <div class="glass-panel" style="padding: 24px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto;">
     <h3 style="font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Seleccionar Sesión</h3>
+
+    @if($cursos->isEmpty())
+    <div class="alert alert-danger" style="margin-bottom: 20px;">
+        No hay sesiones pendientes de registrar asistencia.
+    </div>
+    @endif
+
     <form method="GET" action="{{ route('asistencia.registrar') }}" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
         <div style="flex: 1; min-width: 200px;">
             <label for="filtro_curso" class="form-label">Curso</label>

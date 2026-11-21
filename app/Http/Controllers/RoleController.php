@@ -74,13 +74,25 @@ class RoleController extends Controller
         $role = Role::findOrFail($id);
         $role->delete();
 
-        return redirect()->route('roles.index')->with('success', 'Rol eliminado lógicamente.');
+        return redirect()->route('roles.index')->with('success', 'Rol eliminado exitosamente.');
     }
 
     // rol_usuario view: list users and roles for assignment
-    public function userRoles()
+    public function userRoles(Request $request)
     {
-        $users = User::with('roles')->paginate(10);
+        $users = User::with('roles')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('name', 'like', '%'.$termino.'%')
+                        ->orWhere('email', 'like', '%'.$termino.'%');
+                });
+            })
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
         $roles = Role::all();
 
         return view('roles.user_roles', compact('users', 'roles'));
@@ -115,6 +127,6 @@ class RoleController extends Controller
         $user = User::findOrFail($userId);
         VinculoPivote::desvincular($user->roles());
 
-        return redirect()->route('roles.user')->with('success', 'Relación rol-usuario eliminada con éxito.');
+        return redirect()->route('roles.user')->with('success', 'Relación rol-usuario eliminada exitosamente.');
     }
 }

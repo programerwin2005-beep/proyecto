@@ -14,6 +14,17 @@
         </div>
     </div>
 
+    <form method="GET" action="{{ route('roles.user') }}" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; padding: 15px; border: 1px solid var(--card-border); border-radius: 10px; margin-bottom: 25px;">
+        <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+            <label for="q" class="form-label">Buscar usuario</label>
+            <input id="q" type="text" name="q" class="form-control" value="{{ request('q') }}" placeholder="Nombre o correo electrónico...">
+        </div>
+        <button type="submit" class="btn" style="width: auto; padding: 10px 20px;">Buscar</button>
+        @if(request()->filled('q'))
+            <a href="{{ route('roles.user') }}" class="btn" style="width: auto; padding: 10px 20px; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); text-decoration: none;">Limpiar</a>
+        @endif
+    </form>
+
     <div class="table-container">
         <table class="data-table">
             <thead>
@@ -61,7 +72,11 @@
                 @empty
                     <tr>
                         <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-                            No hay usuarios registrados.
+                            @if(request()->filled('q'))
+                                No se encontraron usuarios con ese nombre o correo.
+                            @else
+                                No hay usuarios registrados.
+                            @endif
                         </td>
                     </tr>
                 @endforelse

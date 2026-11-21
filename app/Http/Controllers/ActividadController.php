@@ -5,12 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ActividadRequest;
 use App\Models\Actividad;
 use App\Models\Ministerio;
+use Illuminate\Http\Request;
 
 class ActividadController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $actividades = Actividad::with('ministerio')->paginate(10);
+        $actividades = Actividad::with('ministerio')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('lugar', 'like', '%'.$termino.'%')
+                        ->orWhereHas('ministerio', fn ($m) => $m->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderByDesc('fecha')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('actividades.index', compact('actividades'));
     }
@@ -57,7 +70,7 @@ class ActividadController extends Controller
         $actividad = Actividad::findOrFail($id);
         $actividad->delete();
 
-        return redirect()->route('actividades.index')->with('success', 'Actividad eliminada lógicamente.');
+        return redirect()->route('actividades.index')->with('success', 'Actividad eliminada exitosamente.');
     }
 
 }

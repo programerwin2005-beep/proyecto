@@ -120,6 +120,13 @@ class PagoController extends Controller
 
     public function destroy(Request $request, Pago $pago)
     {
+        $pago->loadMissing('inscripcion.curso');
+
+        if ($pago->inscripcion?->curso?->haFinalizado()) {
+            return redirect()->route('pagos.index')
+                ->with('error', 'No se puede eliminar el pago porque el curso ya finalizó.');
+        }
+
         DB::transaction(function () use ($pago) {
             // Al eliminar el pago también se elimina su ingreso asociado.
             $pago->ingreso()->delete();
@@ -127,6 +134,6 @@ class PagoController extends Controller
         });
 
         return redirect()->back(302, [], route('pagos.index'))
-            ->with('success', 'Pago e ingreso eliminados con éxito.');
+            ->with('success', 'Pago eliminado exitosamente.');
     }
 }

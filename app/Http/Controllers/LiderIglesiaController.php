@@ -5,12 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LiderIglesiaRequest;
 use App\Models\Cargo;
 use App\Models\LiderIglesia;
+use Illuminate\Http\Request;
 
 class LiderIglesiaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $lideres = LiderIglesia::with('cargo')->paginate(10);
+        $lideres = LiderIglesia::with('cargo')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('telefono', 'like', '%'.$termino.'%')
+                        ->orWhereHas('cargo', fn ($c) => $c->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('lideres.index', compact('lideres'));
     }
@@ -57,6 +70,6 @@ class LiderIglesiaController extends Controller
         $lider = LiderIglesia::findOrFail($id);
         $lider->delete();
 
-        return redirect()->route('lideres.index')->with('success', 'Líder eliminado lógicamente.');
+        return redirect()->route('lideres.index')->with('success', 'Líder eliminado exitosamente.');
     }
 }

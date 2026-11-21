@@ -21,7 +21,7 @@ class ContratoController extends Controller
             WHEN contratos.fecha_fin IS NOT NULL AND contratos.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'por_vencer'
             ELSE 'vigente' END";
 
-        $contratos = Contrato::with(['miembro', 'lider.cargo'])
+        $contratos = Contrato::with(['miembro', 'lider', 'egresos'])
             ->when($request->filled('q'), fn ($q) => $q->whereHas('miembro', fn ($m) => $m->where('nombre', 'like', '%'.$request->q.'%')))
             ->when($request->filled('tipo_compensacion'), fn ($q) => $q->where('tipo_compensacion', $request->tipo_compensacion))
             ->when($request->filled('estado'), fn ($q) => $q->whereRaw("$expresionVigencia = ?", [$request->estado]))
@@ -52,8 +52,10 @@ class ContratoController extends Controller
     {
         $contrato = Contrato::with(['miembro', 'lider.cargo', 'egresos' => fn ($q) => $q->withTrashed()])->withTrashed()->findOrFail($id);
         $totalPagado = (float) Egreso::where('id_contrato', $contrato->id)->sum('monto');
+        $periodos = $contrato->periodosPago()->reverse()->values();
+        $periodoActual = $periodos->first();
 
-        return view('contratos.show', compact('contrato', 'totalPagado'));
+        return view('contratos.show', compact('contrato', 'totalPagado', 'periodos', 'periodoActual'));
     }
 
     public function edit($id)
@@ -79,7 +81,7 @@ class ContratoController extends Controller
         $contrato = Contrato::findOrFail($id);
         $contrato->delete();
 
-        return redirect()->route('contratos.index')->with('success', 'Contrato eliminado lógicamente.');
+        return redirect()->route('contratos.index')->with('success', 'Contrato eliminado exitosamente.');
     }
 
     public function renovar($id)

@@ -4,12 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MiembroRequest;
 use App\Models\Miembro;
+use Illuminate\Http\Request;
 
 class MiembroController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $miembros = Miembro::paginate(10);
+        $miembros = Miembro::query()
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('nombre', 'like', '%'.$termino.'%')
+                        ->orWhere('email', 'like', '%'.$termino.'%')
+                        ->orWhere('telefono', 'like', '%'.$termino.'%');
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('miembros.index', compact('miembros'));
     }
@@ -53,7 +66,7 @@ class MiembroController extends Controller
         $miembro = Miembro::findOrFail($id);
         $miembro->delete();
 
-        return redirect()->route('miembros.index')->with('success', 'Miembro eliminado lógicamente.');
+        return redirect()->route('miembros.index')->with('success', 'Miembro eliminado exitosamente.');
     }
 
 }

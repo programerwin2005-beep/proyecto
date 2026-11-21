@@ -59,6 +59,10 @@ class InscripcionController extends Controller
             abort(404);
         }
 
+        if ($curso->haFinalizado()) {
+            return back()->with('error', 'El curso ya finalizó; no se pueden registrar nuevas inscripciones.');
+        }
+
         $validated = $request->validate([
             'miembro_id' => ['required', 'exists:miembros,id'],
             'fecha_inscripcion' => ['required', 'date'],
@@ -128,8 +132,13 @@ class InscripcionController extends Controller
 
     public function destroy($id)
     {
-        $inscripcion = Inscripcion::findOrFail($id);
+        $inscripcion = Inscripcion::with('curso')->findOrFail($id);
         $cursoId = $inscripcion->curso_id;
+
+        if ($inscripcion->curso?->haFinalizado()) {
+            return redirect()->route('inscripciones.gestion', $cursoId)
+                ->with('error', 'No se puede eliminar la inscripción porque el curso ya finalizó; sus pagos e ingresos quedarían bloqueados.');
+        }
 
         DB::transaction(function () use ($inscripcion) {
             // Al eliminar la inscripción se eliminan sus pagos y, con ellos,
@@ -143,6 +152,6 @@ class InscripcionController extends Controller
         });
 
         return redirect()->route('inscripciones.gestion', $cursoId)
-            ->with('success', 'Inscripción, pago e ingreso eliminados con éxito.');
+            ->with('success', 'Inscripción eliminada exitosamente.');
     }
 }

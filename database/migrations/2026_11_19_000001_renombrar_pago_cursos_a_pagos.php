@@ -34,6 +34,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        throw new RuntimeException('La reversión requiere revisar la versión del código.');
+        // Los nombres nuevos (`pagos` y `pago_id`) son el esquema canónico
+        // del sistema. Revertirlos rompería el código actual, así que esta
+        // migración de compatibilidad no deshace el renombrado.
     }
 };

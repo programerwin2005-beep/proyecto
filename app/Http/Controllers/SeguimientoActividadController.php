@@ -11,9 +11,21 @@ use Illuminate\Validation\Rule;
 
 class SeguimientoActividadController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $seguimientos = SeguimientoActividad::with('actividad')->paginate(10);
+        $seguimientos = SeguimientoActividad::with('actividad')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('responsable', 'like', '%'.$termino.'%')
+                        ->orWhere('observacion', 'like', '%'.$termino.'%')
+                        ->orWhereHas('actividad', fn ($a) => $a->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderByDesc('fecha_registro')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('seguimiento.index', compact('seguimientos'));
     }
@@ -79,6 +91,6 @@ class SeguimientoActividadController extends Controller
         $seguimiento = SeguimientoActividad::findOrFail($id);
         $seguimiento->delete();
 
-        return redirect()->route('seguimiento.index')->with('success', 'Seguimiento eliminado lógicamente.');
+        return redirect()->route('seguimiento.index')->with('success', 'Seguimiento eliminado exitosamente.');
     }
 }

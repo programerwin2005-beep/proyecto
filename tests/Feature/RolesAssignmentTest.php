@@ -41,6 +41,24 @@ class RolesAssignmentTest extends TestCase
         ]);
     }
 
+    public function test_busqueda_de_usuario_por_nombre_filtra_la_lista(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('roles.user', ['q' => 'Usuario Objetivo']))
+            ->assertOk()
+            ->assertSee('Usuario Objetivo')
+            ->assertDontSee('admin_roles@proyecto.com');
+    }
+
+    public function test_busqueda_de_usuario_por_correo_filtra_la_lista(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('roles.user', ['q' => self::EMAIL_OBJETIVO]))
+            ->assertOk()
+            ->assertSee(self::EMAIL_OBJETIVO)
+            ->assertDontSee('admin_roles@proyecto.com');
+    }
+
     public function test_administrador_ve_la_pantalla_asignar_rol(): void
     {
         $this->actingAs($this->admin)

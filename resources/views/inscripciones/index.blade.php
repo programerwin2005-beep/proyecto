@@ -51,6 +51,7 @@
                     <th>Curso</th>
                     <th>Inicio</th>
                     <th>Fin</th>
+                    <th>Estado</th>
                     <th>Inscritos</th>
                     <th>Inscripción</th>
                     <th>Acciones</th>
@@ -63,6 +64,15 @@
                         <td>{{ $curso->nombre }}</td>
                         <td>{{ $curso->f_inicio ? \Carbon\Carbon::parse($curso->f_inicio)->format('d/m/Y') : 'N/A' }}</td>
                         <td>{{ $curso->f_fin ? \Carbon\Carbon::parse($curso->f_fin)->format('d/m/Y') : 'N/A' }}</td>
+                        <td>
+                            @if($curso->trashed())
+                                <span class="badge badge-inactive">Eliminado</span>
+                            @elseif($curso->haFinalizado())
+                                <span class="badge badge-inactive">Cerrado</span>
+                            @else
+                                <span class="badge badge-active">Abierto</span>
+                            @endif
+                        </td>
                         <td>{{ $curso->inscripciones_count }} / {{ $curso->cupo_max ?? '∞' }}</td>
                         <td>
                             @if($curso->tiene_pago)
@@ -74,7 +84,7 @@
                         <td>
                             <div class="action-buttons">
                                 @if(auth()->user()->puede('inscripciones', 'crear'))
-                                <a href="{{ route('inscripciones.gestion', $curso->id) }}" class="btn-icon" title="Inscribirse al curso"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg></a>
+                                <a href="{{ route('inscripciones.gestion', $curso->id) }}" class="btn-icon" title="{{ $curso->haFinalizado() ? 'Ver inscripciones (curso cerrado)' : 'Inscribirse al curso' }}"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg></a>
                                 @endif
                             </div>
                         </td>
@@ -82,7 +92,7 @@
                 
 @empty
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             @if(request()->has('q') || request()->has('tipo') || request()->has('cupo'))
                                 No se encontraron cursos con los filtros aplicados.
                             @else

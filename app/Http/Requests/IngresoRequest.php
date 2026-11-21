@@ -17,7 +17,9 @@ class IngresoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id_actividad' => 'nullable|exists:actividades,id',
+            'id_actividad' => $this->routeIs('ingresos.actividad.store')
+                ? 'required|exists:actividades,id'
+                : 'nullable|exists:actividades,id',
             'id_culto' => 'nullable|exists:cultos,id',
             'categoria_id' => 'nullable|exists:categorias_financieras,id',
             'monto_total' => 'required|numeric|min:0',

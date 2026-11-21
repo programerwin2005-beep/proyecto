@@ -68,6 +68,44 @@
         </div>
     </div>
 
+    <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Pago por Mes</h3>
+    <div class="table-container" style="margin-bottom: 24px;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>Monto del Mes</th>
+                    <th>Pagado</th>
+                    <th>Falta</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($periodos as $periodo)
+                    <tr>
+                        <td>{{ $periodo['inicio']->format('d/m/Y') }} al {{ $periodo['fin']->format('d/m/Y') }}</td>
+                        <td style="font-weight: 600;">Bs {{ number_format($periodo['monto'], 2) }}</td>
+                        <td>Bs {{ number_format($periodo['pagado'], 2) }}</td>
+                        <td style="font-weight: 600; color: {{ $periodo['completo'] ? 'var(--success)' : 'var(--error)' }};">
+                            Bs {{ number_format($periodo['restante'], 2) }}
+                        </td>
+                        <td>
+                            <span class="badge {{ $periodo['completo'] ? 'badge-active' : 'badge-warning' }}">
+                                {{ $periodo['completo'] ? 'Mes pagado' : 'Pendiente' }}
+                            </span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                            El contrato todavía no tiene meses en curso.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
     <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Egresos Asociados</h3>
     <div class="table-container">
         <table class="data-table">

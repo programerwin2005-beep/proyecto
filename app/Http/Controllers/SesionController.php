@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asistencia;
 use App\Models\Curso;
 use App\Models\Docente;
 use App\Models\Inscripcion;
 use App\Models\Sesion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SesionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $query = Sesion::with(['curso', 'docente']);
 
@@ -25,7 +25,21 @@ class SesionController extends Controller
                 : $query->whereRaw('1 = 0');
         }
 
-        $sesiones = $query->paginate(10);
+        $sesiones = $query
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $termino = trim($request->input('q'));
+
+                $query->where(function ($sub) use ($termino) {
+                    $sub->where('tema', 'like', '%'.$termino.'%')
+                        ->orWhere('observacion', 'like', '%'.$termino.'%')
+                        ->orWhereHas('curso', fn ($c) => $c->where('nombre', 'like', '%'.$termino.'%'))
+                        ->orWhereHas('docente.miembro', fn ($m) => $m->where('nombre', 'like', '%'.$termino.'%'));
+                });
+            })
+            ->orderByDesc('fecha')
+            ->orderByDesc('hora')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('sesiones.index', compact('sesiones'));
     }
@@ -70,9 +84,7 @@ class SesionController extends Controller
             ->orderBy('fecha_inscripcion')
             ->get();
 
-        $asistencias = DB::table('asistencias_sesion')
-            ->where('sesion_id', $sesion->id)
-            ->whereNull('deleted_at')
+        $asistencias = Asistencia::where('sesion_id', $sesion->id)
             ->get()
             ->keyBy('miembro_id');
 
@@ -146,7 +158,7 @@ class SesionController extends Controller
         $sesion = Sesion::findOrFail($id);
         $sesion->delete();
 
-        return redirect()->route('sesiones.index')->with('success', 'Sesión eliminada lógicamente.');
+        return redirect()->route('sesiones.index')->with('success', 'Sesión eliminada exitosamente.');
     }
 
     public function generar(Curso $curso)
