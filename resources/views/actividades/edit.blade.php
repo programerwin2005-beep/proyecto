@@ -46,11 +46,15 @@
         </div>
 
         <div class="form-group">
-            <label for="estado" class="form-label">Estado</label>
-            <select name="estado" id="estado" class="form-control" required>
-                @foreach(\App\Enums\EstadoActividad::opciones() as $valor => $etiqueta)
-                    <option value="{{ $valor }}" {{ old('estado', $actividad->estado?->value) === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
-                @endforeach
+            <p>Estado calculado: <strong>{{ $actividad->estado?->value }}</strong>. El avance depende de sus tareas vigentes.</p>
+            <label for="accion_estado" class="form-label">Acción sobre el evento</label>
+            <select name="accion_estado" id="accion_estado" class="form-control">
+                <option value="">Conservar estado automático</option>
+                @if($actividad->estado === \App\Enums\EstadoActividad::Cancelada)
+                    <option value="reactivar" {{ old('accion_estado') === 'reactivar' ? 'selected' : '' }}>Reactivar explícitamente</option>
+                @else
+                    <option value="cancelar" {{ old('accion_estado') === 'cancelar' ? 'selected' : '' }}>Cancelar evento</option>
+                @endif
             </select>
         </div>
 

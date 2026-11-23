@@ -8,6 +8,7 @@ enum EstadoSeguimiento: string
 {
     use Etiquetable;
 
+    case Pendiente = 'Pendiente';
     case EnProgreso = 'En Progreso';
     case Completado = 'Completado';
     case Detenido = 'Detenido';

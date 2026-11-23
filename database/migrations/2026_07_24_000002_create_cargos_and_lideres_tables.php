@@ -30,7 +30,6 @@ return new class extends Migration
 
         Schema::create('cultos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_lider_iglesia')->constrained('lideres_iglesia')->onDelete('cascade');
             $table->string('nombre');
             $table->string('dia_semana');
             $table->time('hora');

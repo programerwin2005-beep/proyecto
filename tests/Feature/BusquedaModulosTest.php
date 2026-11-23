@@ -128,7 +128,6 @@ class BusquedaModulosTest extends TestCase
         ]);
 
         Culto::create([
-            'id_lider_iglesia' => $this->liderBuscado->id,
             'nombre' => 'Culto Buscado',
             'dia_semana' => 'Domingo',
             'hora' => '10:00',
@@ -136,7 +135,6 @@ class BusquedaModulosTest extends TestCase
         ]);
 
         Culto::create([
-            'id_lider_iglesia' => $this->liderBuscado->id,
             'nombre' => 'Culto Otro',
             'dia_semana' => 'Lunes',
             'hora' => '18:00',

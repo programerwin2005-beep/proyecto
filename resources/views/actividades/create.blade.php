@@ -49,12 +49,7 @@
         </div>
 
         <div class="form-group">
-            <label for="estado" class="form-label">Estado</label>
-            <select name="estado" id="estado" class="form-control" required>
-                @foreach(\App\Enums\EstadoActividad::opciones() as $valor => $etiqueta)
-                    <option value="{{ $valor }}" {{ old('estado', 'Programado') === $valor ? 'selected' : '' }}>{{ $etiqueta }}</option>
-                @endforeach
-            </select>
+            <p>Estado inicial: <strong>Programado</strong>. Se actualizará automáticamente con el avance de las tareas.</p>
         </div>
 
         <div class="form-group">

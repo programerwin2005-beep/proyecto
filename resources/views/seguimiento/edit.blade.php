@@ -21,6 +21,13 @@
     <form method="POST" action="{{ route('seguimiento.update', $seguimiento->id) }}">
         @csrf
         @method('PUT')
+        @if(!filled($seguimiento->nombre_tarea))
+            <p class="alert alert-warning">Registro histórico pendiente de revisión. Antes de nombrarlo, confirme que representa una tarea independiente. Si es un avance anterior de otra tarea, elimínelo de las tareas vigentes y actualice la tarea actual en lugar de duplicarla. La eliminación conserva el registro y sus observaciones.</p>
+        @endif
+        <div class="form-group">
+            <label for="nombre_tarea" class="form-label">Nombre de la tarea *</label>
+            <input id="nombre_tarea" name="nombre_tarea" class="form-control" maxlength="255" value="{{ old('nombre_tarea', $seguimiento->nombre_tarea) }}" required>
+        </div>
 
         <div class="form-group">
             <label for="id_actividad" class="form-label">Actividad *</label>
@@ -42,10 +49,6 @@
                 <input id="fecha_registro" type="date" name="fecha_registro" class="form-control" value="{{ old('fecha_registro', \Carbon\Carbon::parse($seguimiento->fecha_registro)->format('Y-m-d')) }}" required>
             </div>
 
-            <div class="form-group">
-                <label for="porcentaje_avance" class="form-label">Porcentaje de Avance (%) *</label>
-                <input id="porcentaje_avance" type="number" name="porcentaje_avance" class="form-control" value="{{ old('porcentaje_avance', $seguimiento->porcentaje_avance) }}" min="0" max="100" step="1" required>
-            </div>
         </div>
 
         <div class="form-group">

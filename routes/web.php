@@ -86,6 +86,7 @@ Route::middleware(['auth', 'prevent-back-history'])->group(function () {
         Route::resource('actividades', ActividadController::class);
 
         // 6. Seguimiento de Actividades
+        Route::patch('seguimiento/{id}/completar', [SeguimientoActividadController::class, 'completar'])->name('seguimiento.completar');
         Route::resource('seguimiento', SeguimientoActividadController::class);
 
         // 7. Cursos

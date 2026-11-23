@@ -14,7 +14,13 @@ class SeguimientoActividad extends Model
 
     protected $table = 'seguimiento_actividades';
 
+    protected $attributes = [
+        'estado' => 'Pendiente',
+        'porcentaje_avance' => 0,
+    ];
+
     protected $fillable = [
+        'nombre_tarea',
         'id_actividad',
         'fecha_registro',
         'observacion',

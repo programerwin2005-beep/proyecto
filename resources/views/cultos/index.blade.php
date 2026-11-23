@@ -13,7 +13,7 @@
         @endif
     </div>
 
-    @include('components.search-bar', ['action' => route('cultos.index'), 'label' => 'Buscar culto', 'placeholder' => 'Nombre, descripción o líder...'])
+    @include('components.search-bar', ['action' => route('cultos.index'), 'label' => 'Buscar culto', 'placeholder' => 'Nombre o descripción...'])
 
     <div class="table-container">
         <table class="data-table">
@@ -22,7 +22,6 @@
                     <th>Nombre</th>
                     <th>Día de la Semana</th>
                     <th>Hora</th>
-                    <th>Líder a Cargo</th>
                     <th>Descripción</th>
                     <th>Acciones</th>
                 </tr>
@@ -34,7 +33,6 @@
                         <td>{{ $culto->nombre }}</td>
                         <td>{{ $culto->dia_semana?->value }}</td>
                         <td>{{ $culto->hora }}</td>
-                        <td>{{ $culto->liderIglesia->nombre ?? 'N/A' }}</td>
                         <td>{{ $culto->descripcion ?? 'N/A' }}</td>
                         <td>
                             <div class="action-buttons">
@@ -54,7 +52,7 @@
                 
 @empty
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             No hay cultos registrados.
                         </td>
                     </tr>

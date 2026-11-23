@@ -16,6 +16,11 @@
     if ($estado !== '') {
         $meta['Estado'] = $estado;
     }
+    if (!empty($filtros['q'])) $meta['Búsqueda'] = $filtros['q'];
+    if (!empty($filtros['curso_id'])) $meta['Curso'] = $cursos->find($filtros['curso_id'])?->nombre;
+    if (!empty($filtros['ministerio_id'])) $meta['Ministerio'] = $ministerios->find($filtros['ministerio_id'])?->nombre;
+    if (!empty($filtros['contratos'])) $meta['Contratos'] = $filtros['contratos'] === 'con' ? 'Con contratos' : 'Sin contratos';
+    if (!empty($filtros['ministerios'])) $meta['Participación actual'] = $filtros['ministerios'] === 'con' ? 'Con ministerio' : 'Sin ministerio';
 
     // Indicadores calculados con los MISMOS datos del listado.
     $indicadores = [
@@ -44,6 +49,19 @@
             ['badge' => $miembro->estado?->value, 'tone' => $miembro->estado?->value === 'Activo' ? 'success' : 'muted'],
         ];
     })->all();
+
+    $columnasVinculos = [
+        ['label' => 'Miembro'],
+        ['label' => 'Cursos e inscripciones'],
+        ['label' => 'Contratos'],
+        ['label' => 'Ministerios actuales'],
+    ];
+    $filasVinculos = $miembros->map(fn ($miembro) => [
+        $miembro->nombre,
+        $miembro->cursos->map(fn ($curso) => $curso->nombre . ' (' . $curso->pivot->estado . ')')->implode('; ') ?: 'Sin inscripciones',
+        $miembro->contratos->map(fn ($contrato) => '#' . $contrato->id . ' · ' . ($contrato->tipo_compensacion?->value ?? 'Sin tipo') . ' · ' . $contrato->vigencia . ' · ' . $contrato->fecha_inicio . ' al ' . ($contrato->fecha_fin ?: 'sin fecha de fin'))->implode('; ') ?: 'Sin contratos',
+        $miembro->ministerios->pluck('nombre')->implode('; ') ?: 'Sin ministerio actual',
+    ])->all();
 @endphp
 
 {{-- ============ INTERFAZ DE LA APLICACIÓN (no se imprime) ============ --}}
@@ -55,7 +73,52 @@
         </div>
     </div>
 
+    @if($errors->any())
+        <div class="alert alert-danger">
+            @foreach($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
     <form method="GET" action="{{ route('reportes.miembros') }}" class="report-filters">
+        <div class="report-field">
+            <label class="form-label" for="filtro-q">Buscar miembro</label>
+            <input type="search" name="q" id="filtro-q" class="form-control" value="{{ $filtros['q'] ?? '' }}" placeholder="Nombre, correo o teléfono">
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="filtro-curso">Inscrito en curso</label>
+            <select name="curso_id" id="filtro-curso" class="form-control">
+                <option value="">Todos</option>
+                @foreach($cursos as $curso)
+                    <option value="{{ $curso->id }}" @selected(($filtros['curso_id'] ?? '') == $curso->id)>{{ $curso->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="filtro-contratos">Contratos registrados</label>
+            <select name="contratos" id="filtro-contratos" class="form-control">
+                <option value="">Todos</option>
+                <option value="con" @selected(($filtros['contratos'] ?? '') === 'con')>Con contratos</option>
+                <option value="sin" @selected(($filtros['contratos'] ?? '') === 'sin')>Sin contratos</option>
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="filtro-ministerios">Participación actual</label>
+            <select name="ministerios" id="filtro-ministerios" class="form-control">
+                <option value="">Todos</option>
+                <option value="con" @selected(($filtros['ministerios'] ?? '') === 'con')>Con ministerio</option>
+                <option value="sin" @selected(($filtros['ministerios'] ?? '') === 'sin')>Sin ministerio</option>
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="filtro-ministerio">Ministerio actual</label>
+            <select name="ministerio_id" id="filtro-ministerio" class="form-control">
+                <option value="">Todos</option>
+                @foreach($ministerios as $ministerio)
+                    <option value="{{ $ministerio->id }}" @selected(($filtros['ministerio_id'] ?? '') == $ministerio->id)>{{ $ministerio->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
         <div class="report-field">
             <label class="form-label" for="filtro-estado">Estado</label>
             <select name="estado" id="filtro-estado" class="form-control">
@@ -75,6 +138,9 @@
         <div class="report-field report-field--action">
             <button type="submit" class="report-btn report-btn--primary">Aplicar filtros</button>
         </div>
+        <div class="report-field report-field--action">
+            <a href="{{ route('reportes.miembros') }}" class="report-btn">Limpiar filtros</a>
+        </div>
     </form>
 </div>
 
@@ -88,14 +154,56 @@
     :period="$periodo"
     :meta="$meta"
 >
-    <x-slot:summary>
-        <x-report.summary :items="$indicadores" />
-    </x-slot:summary>
+    @if(empty($filtros['q']))
+        <x-slot:summary>
+            <x-report.summary :items="$indicadores" />
+        </x-slot:summary>
+    @endif
 
     <x-report.table
         :columns="$columnas"
         :rows="$filas"
         empty="No hay miembros que coincidan con los filtros aplicados."
     />
+    <p>Se incluyen inscripciones y contratos registrados no eliminados. Los ministerios corresponden a participaciones vigentes a la fecha de emisión.</p>
+    <x-report.table
+        :columns="$columnasVinculos"
+        :rows="$filasVinculos"
+        caption="Cursos, contratos y ministerios por miembro"
+        empty="Sin miembros para mostrar."
+    />
+    @if(!empty($filtros['q']))
+        @foreach($miembros as $miembro)
+            @if($miembro->docente)
+                <h3>{{ $miembro->nombre }} — Docente {{ $miembro->docente->activo ? 'activo' : 'inactivo' }}</h3>
+                <p>{{ $miembro->docente->sesiones->count() }} sesiones asignadas pendientes.
+                    Se muestran sesiones sin asistencia registrada, incluidas las futuras y las atrasadas.</p>
+                @php
+                    $columnasSesiones = [
+                        ['label' => 'Curso'],
+                        ['label' => 'Tema'],
+                        ['label' => 'Fecha'],
+                        ['label' => 'Hora'],
+                        ['label' => 'Estado'],
+                    ];
+                    $filasSesiones = $miembro->docente->sesiones->map(fn ($sesion) => [
+                        $sesion->curso->nombre,
+                        $sesion->tema ?: 'Sin tema',
+                        \Carbon\Carbon::parse($sesion->fecha)->format('d/m/Y'),
+                        $sesion->hora ? substr($sesion->hora, 0, 5) : 'Sin horario',
+                        \Carbon\Carbon::parse($sesion->fecha)->startOfDay()->lt(today())
+                            ? 'Atrasada'
+                            : (\Carbon\Carbon::parse($sesion->fecha)->isToday() ? 'En Progreso' : 'Programado'),
+                    ])->all();
+                @endphp
+                <x-report.table
+                    :columns="$columnasSesiones"
+                    :rows="$filasSesiones"
+                    caption="Sesiones pendientes del docente"
+                    empty="No tiene sesiones asignadas pendientes."
+                />
+            @endif
+        @endforeach
+    @endif
 </x-report.layout>
 @endsection

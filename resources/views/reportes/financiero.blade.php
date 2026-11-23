@@ -28,7 +28,11 @@
         'Bs ' . number_format($total, 2),
     ])->values()->all();
 
-    $conceptoIngreso = fn ($ingreso) => trim(($ingreso->tipo?->value ?? 'Sin clasificar') . ($ingreso->metodo_pago ? ' · ' . $ingreso->metodo_pago->value : ''));
+    $conceptoIngreso = fn ($ingreso) => trim(
+        ($ingreso->tipo?->value ?? 'Sin clasificar')
+        . ($ingreso->metodo_pago ? ' · ' . $ingreso->metodo_pago->value : '')
+        . ($ingreso->pago_id ? ' · ' . ($ingreso->pago?->inscripcion?->miembro?->nombre ?? 'Miembro no disponible') : '')
+    );
     $conceptoEgreso = fn ($egreso) => trim(($egreso->tipo_egreso?->value ?? 'Sin clasificar') . ($egreso->descripcion ? ' · ' . $egreso->descripcion : ''));
 
     $columnasMovimientos = [
@@ -67,6 +71,13 @@
         </div>
     </div>
 
+    @if($errors->any())
+        <div class="alert alert-danger">
+            @foreach($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
     <form method="GET" action="{{ route('reportes.financiero') }}" class="report-filters">
         <div class="report-field">
             <label class="form-label" for="filtro-desde">Desde</label>
@@ -76,8 +87,46 @@
             <label class="form-label" for="filtro-hasta">Hasta</label>
             <input type="date" name="hasta" id="filtro-hasta" class="form-control" value="{{ $hasta }}">
         </div>
+        <div class="report-field">
+            <label class="form-label" for="movimiento">Movimientos</label>
+            <select id="movimiento" name="movimiento" class="form-control">
+                <option value="">Ingresos y egresos</option>
+                <option value="ingresos" @selected(($filtros['movimiento'] ?? '') === 'ingresos')>Solo ingresos</option>
+                <option value="egresos" @selected(($filtros['movimiento'] ?? '') === 'egresos')>Solo egresos</option>
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="tipo_ingreso">Tipo de ingreso</label>
+            <select id="tipo_ingreso" name="tipo_ingreso" class="form-control">
+                <option value="">Todos</option>
+                @foreach(\App\Enums\TipoIngreso::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" @selected(($filtros['tipo_ingreso'] ?? '') === $valor)>{{ $etiqueta }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="tipo_egreso">Tipo de egreso</label>
+            <select id="tipo_egreso" name="tipo_egreso" class="form-control">
+                <option value="">Todos</option>
+                @foreach(\App\Enums\TipoEgreso::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" @selected(($filtros['tipo_egreso'] ?? '') === $valor)>{{ $etiqueta }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="report-field">
+            <label class="form-label" for="metodo_pago">Método de pago (ingresos)</label>
+            <select id="metodo_pago" name="metodo_pago" class="form-control">
+                <option value="">Todos</option>
+                @foreach(\App\Enums\MetodoPago::opciones() as $valor => $etiqueta)
+                    <option value="{{ $valor }}" @selected(($filtros['metodo_pago'] ?? '') === $valor)>{{ $etiqueta }}</option>
+                @endforeach
+            </select>
+        </div>
         <div class="report-field report-field--action">
             <button type="submit" class="report-btn report-btn--primary">Aplicar filtros</button>
+        </div>
+        <div class="report-field report-field--action">
+            <a href="{{ route('reportes.financiero') }}" class="report-btn">Limpiar filtros</a>
         </div>
     </form>
 </div>
@@ -91,6 +140,12 @@
     :generated-at="now()"
     :period="$periodo"
 >
+    <p>Totales y balance correspondientes a los movimientos filtrados.
+        Movimientos: {{ ['ingresos' => 'Solo ingresos', 'egresos' => 'Solo egresos'][$filtros['movimiento'] ?? ''] ?? 'Ingresos y egresos' }}.
+        Tipo de ingreso: {{ $filtros['tipo_ingreso'] ?? 'Todos' }}.
+        Tipo de egreso: {{ $filtros['tipo_egreso'] ?? 'Todos' }}.
+        Método de pago (ingresos): {{ $filtros['metodo_pago'] ?? 'Todos' }}.
+    </p>
     <x-slot:summary>
         <x-report.summary :items="$indicadores" />
     </x-slot:summary>

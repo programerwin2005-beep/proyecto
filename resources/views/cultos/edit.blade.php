@@ -41,16 +41,6 @@
         </div>
 
         <div class="form-group">
-            <label for="id_lider_iglesia" class="form-label">Líder a Cargo</label>
-            <select id="id_lider_iglesia" name="id_lider_iglesia" class="form-control" required>
-                <option value="">Seleccione un líder...</option>
-                @foreach($lideres as $lider)
-                    <option value="{{ $lider->id }}" {{ old('id_lider_iglesia', $culto->id_lider_iglesia) == $lider->id ? 'selected' : '' }}>{{ $lider->nombre }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="form-group">
             <label for="descripcion" class="form-label">Descripción</label>
             <textarea id="descripcion" name="descripcion" class="form-control" rows="3">{{ old('descripcion', $culto->descripcion) }}</textarea>
         </div>

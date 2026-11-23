@@ -186,28 +186,20 @@ final class KpiService
             ])
             ->all();
 
-        $ultimosSeguimientos = DB::table('seguimiento_actividades')
+        $avanceTareas = DB::table('seguimiento_actividades')
             ->select('id_actividad')
-            ->selectRaw('MAX(id) as ultimo_id')
+            ->selectRaw("CASE WHEN SUM(CASE WHEN nombre_tarea IS NULL OR TRIM(nombre_tarea) = '' THEN 1 ELSE 0 END) > 0 THEN NULL ELSE 100.0 * SUM(CASE WHEN estado = 'Completado' THEN 1 ELSE 0 END) / COUNT(*) END as porcentaje_avance")
             ->whereNull('deleted_at')
             ->groupBy('id_actividad');
 
         $avancePromedio = DB::table('actividades as a')
-            ->joinSub($ultimosSeguimientos, 'u', fn ($join) => $join->on('u.id_actividad', '=', 'a.id'))
-            ->join('seguimiento_actividades as s', function ($join) {
-                $join->on('s.id', '=', 'u.ultimo_id')
-                    ->whereNull('s.deleted_at');
-            })
+            ->joinSub($avanceTareas, 's', fn ($join) => $join->on('s.id_actividad', '=', 'a.id'))
             ->whereNull('a.deleted_at')
             ->whereBetween('a.fecha', [$desde, $hasta])
             ->avg('s.porcentaje_avance');
 
         $atrasadasQuery = DB::table('actividades as a')
-            ->leftJoinSub($ultimosSeguimientos, 'u', fn ($join) => $join->on('u.id_actividad', '=', 'a.id'))
-            ->leftJoin('seguimiento_actividades as s', function ($join) {
-                $join->on('s.id', '=', 'u.ultimo_id')
-                    ->whereNull('s.deleted_at');
-            })
+            ->leftJoinSub($avanceTareas, 's', fn ($join) => $join->on('s.id_actividad', '=', 'a.id'))
             ->whereNull('a.deleted_at')
             ->where(function ($query) use ($hoy) {
                 $query->where(function ($vencidas) use ($hoy) {

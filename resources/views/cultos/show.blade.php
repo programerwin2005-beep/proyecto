@@ -20,10 +20,6 @@
             <span style="font-weight: 600; color: var(--text-primary);">{{ $culto->nombre }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
-            <span style="color: var(--text-secondary);">Líder Encargado</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ $culto->liderIglesia?->nombre ?? 'N/A' }}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Día</span>
             <span style="font-weight: 600; color: var(--text-primary);">{{ $culto->dia_semana?->value }}</span>
         </div>

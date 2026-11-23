@@ -20,6 +20,10 @@
 
     <form method="POST" action="{{ route('seguimiento.store') }}">
         @csrf
+        <div class="form-group">
+            <label for="nombre_tarea" class="form-label">Nombre de la tarea *</label>
+            <input id="nombre_tarea" name="nombre_tarea" class="form-control" maxlength="255" value="{{ old('nombre_tarea') }}" required>
+        </div>
 
         <div class="form-group">
             <label for="id_actividad" class="form-label">Actividad *</label>
@@ -27,7 +31,7 @@
                 <option value="">Seleccione una actividad...</option>
                 @foreach($actividades as $actividad)
 
-                    <option value="{{ $actividad->id }}" {{ old('id_actividad') == $actividad->id ? 'selected' : '' }}>
+                    <option value="{{ $actividad->id }}" {{ old('id_actividad', request('id_actividad')) == $actividad->id ? 'selected' : '' }}>
                         {{ $actividad->nombre }}
                     </option>
                 
@@ -41,10 +45,6 @@
                 <input id="fecha_registro" type="date" name="fecha_registro" class="form-control" value="{{ old('fecha_registro', date('Y-m-d')) }}" required>
             </div>
 
-            <div class="form-group">
-                <label for="porcentaje_avance" class="form-label">Porcentaje de Avance (%) *</label>
-                <input id="porcentaje_avance" type="number" name="porcentaje_avance" class="form-control" value="{{ old('porcentaje_avance', 0) }}" min="0" max="100" step="1" required>
-            </div>
         </div>
 
         <div class="form-group">
@@ -55,6 +55,7 @@
         <div class="form-group">
             <label for="estado" class="form-label">Estado *</label>
             <select id="estado" name="estado" class="form-control" required>
+                <option value="Pendiente" {{ old('estado', 'Pendiente') == 'Pendiente' ? 'selected' : '' }}>Pendiente</option>
                 <option value="En Progreso" {{ old('estado') == 'En Progreso' ? 'selected' : '' }}>En Progreso</option>
                 <option value="Completado" {{ old('estado') == 'Completado' ? 'selected' : '' }}>Completado</option>
                 <option value="Detenido" {{ old('estado') == 'Detenido' ? 'selected' : '' }}>Detenido</option>

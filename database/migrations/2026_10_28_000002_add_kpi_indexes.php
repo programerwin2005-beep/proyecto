@@ -44,7 +44,6 @@ return new class extends Migration
 
         $this->index('contratos', ['id_miembro', 'fecha_inicio', 'fecha_fin'], 'idx_contratos_miembro_fechas');
         $this->index('contratos', ['fecha_fin', 'activo'], 'idx_contratos_fin_activo');
-        $this->index('contratos', ['id_cargo'], 'idx_contratos_cargo');
 
         $this->index('miembro_ministerio', ['ministerio_id', 'deleted_at'], 'idx_miembro_ministerio_ministerio');
         $this->index('miembro_ministerio', ['miembro_id', 'fecha_fin'], 'idx_miembro_ministerio_miembro');

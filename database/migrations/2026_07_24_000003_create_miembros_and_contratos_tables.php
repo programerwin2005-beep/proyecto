@@ -35,7 +35,6 @@ return new class extends Migration
         Schema::create('contratos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_miembro')->constrained('miembros')->onDelete('cascade');
-            $table->foreignId('id_lider_iglesia')->nullable()->constrained('lideres_iglesia')->onDelete('set null');
             $table->string('tipo_compensacion')->default('Salario');
             $table->decimal('salario', 10, 2);
             $table->date('fecha_inicio');

@@ -15,6 +15,7 @@
     </div>
 
     <div style="border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; margin-bottom: 20px;">
+        <div style="padding: 14px 18px;">Tarea: {{ $seguimiento->nombre_tarea ?? 'Histórico pendiente de revisión' }}</div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Actividad</span>
             <span style="font-weight: 600; color: var(--text-primary);">{{ $seguimiento->actividad?->nombre ?? 'N/A' }}</span>
@@ -32,8 +33,7 @@
             <span style="font-weight: 600; color: var(--text-primary);">{{ $seguimiento->estado?->value }}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
-            <span style="color: var(--text-secondary);">Porcentaje de Avance</span>
-            <span style="font-weight: 600; color: var(--text-primary);">{{ number_format($seguimiento->porcentaje_avance, 0) }}%</span>
+            @include('seguimiento.completar', ['tarea' => $seguimiento])
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px;">
             <span style="color: var(--text-secondary);">Observación</span>

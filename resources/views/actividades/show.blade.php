@@ -34,7 +34,7 @@
         <div style="display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
             <span style="color: var(--text-secondary);">Estado</span>
             <span style="font-weight: 600; color: var(--text-primary);">
-                <span class="badge {{ $actividad->estado?->value === 'Completada' ? 'badge-active' : ($actividad->estado?->value === 'Cancelada' ? 'badge-inactive' : 'badge-warning') }}">{{ $actividad->estado?->value }}</span>
+                <span class="badge {{ $actividad->estadoVisible() === 'Terminado' ? 'badge-active' : ($actividad->estado?->value === 'Cancelada' ? 'badge-inactive' : 'badge-warning') }}">{{ $actividad->estadoVisible() }}</span>
             </span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 14px 18px;">
@@ -43,16 +43,25 @@
         </div>
     </div>
 
-    <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Seguimiento</h3>
+    <h3 style="font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">Tareas planificadas</h3>
+    <p>{{ $actividad->seguimientos->where('estado', \App\Enums\EstadoSeguimiento::Completado)->count() }} de {{ $actividad->seguimientos->count() }} tareas completadas</p>
+    @if(!$actividad->trashed() && auth()->user()->puede('seguimiento', 'crear'))
+        <a href="{{ route('seguimiento.create', ['id_actividad' => $actividad->id]) }}" class="btn" style="width: auto; margin-bottom: 15px;">+ Agregar tarea</a>
+    @endif
+    @if($actividad->seguimientos->contains(fn ($t) => !filled($t->nombre_tarea)))
+        <p class="alert alert-warning">Hay seguimientos históricos pendientes de revisión. No se usarán para completar el evento ni calcular su avance hasta confirmar cuáles son tareas independientes y nombrarlas.</p>
+    @endif
     <div class="table-container">
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Fecha Registro</th>
+                    <th>Tarea</th>
                     <th>Responsable</th>
                     <th>Estado</th>
-                    <th>Avance</th>
+                    <th>Tarea completada</th>
                     <th>Observación</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,14 +69,20 @@
 
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($seg->fecha_registro)->format('d/m/Y') }}</td>
+                        <td>{{ $seg->nombre_tarea ?? 'Histórico pendiente de revisión' }}</td>
                         <td>{{ $seg->responsable }}</td>
                         <td>{{ $seg->estado?->value }}</td>
-                        <td>{{ number_format($seg->porcentaje_avance, 0) }}%</td>
+                        <td>@include('seguimiento.completar', ['tarea' => $seg])</td>
                         <td>{{ $seg->observacion ?? 'N/A' }}</td>
+                        <td>
+                            @if(!$actividad->trashed() && auth()->user()->puede('seguimiento', 'editar'))
+                                <a href="{{ route('seguimiento.edit', $seg->id) }}" class="btn" style="width: auto;">Actualizar tarea</a>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             Esta actividad no tiene seguimiento registrado.
                         </td>
                     </tr>

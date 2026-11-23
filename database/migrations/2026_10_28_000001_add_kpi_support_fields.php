@@ -16,15 +16,6 @@ return new class extends Migration
         $this->addColumn('miembros', 'fecha_bautismo', fn (Blueprint $t) => $t->date('fecha_bautismo')->nullable()->after('fecha_conversion'));
 
         // 2. Deriva de esquema: columnas que existen en la BD viva pero no en migraciones.
-        if (! Schema::hasColumn('contratos', 'id_cargo')) {
-            Schema::table('contratos', function (Blueprint $table) {
-                $table->unsignedBigInteger('id_cargo')->nullable()->after('id_miembro')->index();
-                if (DB::getDriverName() !== 'sqlite') {
-                    $table->foreign('id_cargo')->references('id')->on('cargos')->nullOnDelete();
-                }
-            });
-        }
-
         if (! Schema::hasColumn('egresos', 'id_lider_iglesia')) {
             Schema::table('egresos', function (Blueprint $table) {
                 $table->unsignedBigInteger('id_lider_iglesia')->nullable()->after('id_contrato')->index();
@@ -171,8 +162,8 @@ return new class extends Migration
         $this->dropColumnIfExists('miembros', 'motivo_baja');
         $this->dropColumnIfExists('miembros', 'fecha_baja');
 
-        // No se eliminan contratos.id_cargo ni egresos.id_lider_iglesia:
-        // pueden existir en la BD viva antes de esta migración y contener datos.
+        // No se elimina egresos.id_lider_iglesia: puede existir en la BD viva
+        // antes de esta migración y contener datos.
     }
 
     private function addColumn(string $table, string $column, Closure $callback): void

@@ -93,6 +93,7 @@ foreach ($recursos as $modulo => $prefijo) {
 }
 
 $rutas += [
+    'seguimiento.completar' => ['seguimiento', 'editar'],
     // Roles: asignación de roles a usuarios
     'roles.user' => ['roles', 'ver'],
     'roles.user.edit' => ['roles', 'editar'],

@@ -22,7 +22,8 @@ class ActividadRequest extends FormRequest
             'fecha' => 'required|date',
             'lugar' => 'nullable|string|max:255',
             'descripcion' => 'nullable|string',
-            'estado' => ['required', Rule::enum(EstadoActividad::class)],
+            'estado' => ['nullable', Rule::enum(EstadoActividad::class)],
+            'accion_estado' => ['nullable', Rule::in(['cancelar', 'reactivar'])],
         ];
     }
 }

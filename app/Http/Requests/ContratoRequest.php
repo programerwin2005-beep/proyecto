@@ -34,7 +34,6 @@ class ContratoRequest extends FormRequest
                     }
                 },
             ],
-            'id_lider_iglesia' => 'required|exists:lideres_iglesia,id',
             'tipo_compensacion' => ['required', Rule::enum(TipoCompensacion::class)],
             'salario' => [
                 'required_if:tipo_compensacion,Salario,Bono',

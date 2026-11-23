@@ -37,27 +37,6 @@
         </div>
 
         <div class="form-group">
-            <label for="id_lider_iglesia" class="form-label">Líder de Iglesia *</label>
-            <select name="id_lider_iglesia" id="id_lider_iglesia" class="form-control" required onchange="mostrarCargo()">
-                <option value="">Seleccione un líder...</option>
-                @foreach($lideres as $lider)
-
-                    <option
-                        value="{{ $lider->id }}"
-                        data-cargo="{{ $lider->cargo?->nombre ?? 'Sin cargo' }}"
-                        {{ old('id_lider_iglesia') == $lider->id ? 'selected' : '' }}
-
-                    >
-                        {{ $lider->nombre }}{{ $lider->cargo ? ' (' . $lider->cargo->nombre . ')' : '' }}
-
-                    </option>
-                
-@endforeach
-            </select>
-            <p id="cargo-info" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px; min-height: 20px;"></p>
-        </div>
-
-        <div class="form-group">
             <label for="tipo_compensacion" class="form-label">Tipo de Compensación *</label>
             <select name="tipo_compensacion" id="tipo_compensacion" class="form-control" required onchange="toggleSalario()">
                 @foreach($tiposCompensacion as $valor => $etiqueta)
@@ -98,22 +77,11 @@
 
 <script>
 var infoTipos = {
-    'Salario': 'El líder recibe un pago mensual por su servicio.',
-    'Bono': 'El líder recibe un pago único como bono o compensación especial.',
-    'Beneficios': 'El líder recibe beneficios no monetarios (transporte, alimentación, etc.).',
-    'Voluntario': 'El líder sirve de forma voluntaria sin compensación económica.'
+    'Salario': 'El miembro recibe un pago mensual por su servicio.',
+    'Bono': 'El miembro recibe un pago único como bono o compensación especial.',
+    'Beneficios': 'El miembro recibe beneficios no monetarios (transporte, alimentación, etc.).',
+    'Voluntario': 'El miembro sirve de forma voluntaria sin compensación económica.'
 };
-
-function mostrarCargo() {
-    var sel = document.getElementById('id_lider_iglesia');
-    var info = document.getElementById('cargo-info');
-    var opt = sel.options[sel.selectedIndex];
-    if (opt && opt.value && opt.dataset.cargo) {
-        info.textContent = 'Cargo asignado: ' + opt.dataset.cargo;
-    } else {
-        info.textContent = '';
-    }
-}
 
 function toggleSalario() {
     var tipo = document.getElementById('tipo_compensacion').value;
@@ -144,7 +112,6 @@ function toggleSalario() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    mostrarCargo();
     toggleSalario();
 });
 </script>

@@ -38,7 +38,7 @@
                         data-salario="{{ $contrato->salario }}"
                         {{ (string) old('id_contrato') === (string) $contrato->id ? 'selected' : '' }}
                     >
-                        Contrato #{{ $contrato->id }} — {{ $contrato->miembro->nombre ?? $contrato->lider->nombre ?? 'N/A' }}
+                        Contrato #{{ $contrato->id }} — {{ $contrato->miembro->nombre ?? 'N/A' }}
                         (Bs {{ number_format($contrato->salario, 2) }} · {{ $contrato->vigencia }})
                     </option>
                 @endforeach

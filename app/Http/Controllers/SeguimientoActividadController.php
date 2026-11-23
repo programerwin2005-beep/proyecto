@@ -6,6 +6,7 @@ use App\Enums\EstadoSeguimiento;
 use App\Models\Actividad;
 use App\Models\SeguimientoActividad;
 use App\Rules\SoloLetras;
+use App\Services\ActividadTareasService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,8 @@ class SeguimientoActividadController extends Controller
                 $termino = trim($request->input('q'));
 
                 $query->where(function ($sub) use ($termino) {
-                    $sub->where('responsable', 'like', '%'.$termino.'%')
+                    $sub->where('nombre_tarea', 'like', '%'.$termino.'%')
+                        ->orWhere('responsable', 'like', '%'.$termino.'%')
                         ->orWhere('observacion', 'like', '%'.$termino.'%')
                         ->orWhereHas('actividad', fn ($a) => $a->where('nombre', 'like', '%'.$termino.'%'));
                 });
@@ -40,15 +42,15 @@ class SeguimientoActividadController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'nombre_tarea' => 'required|string|max:255',
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
             'responsable' => ['required', 'string', 'max:255', new SoloLetras],
-            'porcentaje_avance' => 'required|numeric|min:0|max:100',
             'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
-        SeguimientoActividad::create($validated);
+        app(ActividadTareasService::class)->guardarTarea($validated);
 
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento registrado con éxito.');
     }
@@ -62,7 +64,7 @@ class SeguimientoActividadController extends Controller
 
     public function edit($id)
     {
-        $seguimiento = SeguimientoActividad::withTrashed()->findOrFail($id);
+        $seguimiento = SeguimientoActividad::findOrFail($id);
         $actividades = Actividad::all();
 
         return view('seguimiento.edit', compact('seguimiento', 'actividades'));
@@ -70,27 +72,32 @@ class SeguimientoActividadController extends Controller
 
     public function update(Request $request, $id)
     {
-        $seguimiento = SeguimientoActividad::withTrashed()->findOrFail($id);
-
         $validated = $request->validate([
+            'nombre_tarea' => 'required|string|max:255',
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
             'responsable' => ['required', 'string', 'max:255', new SoloLetras],
-            'porcentaje_avance' => 'required|numeric|min:0|max:100',
             'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
-        $seguimiento->update($validated);
+        app(ActividadTareasService::class)->guardarTarea($validated, (int) $id);
 
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento actualizado con éxito.');
     }
 
     public function destroy($id)
     {
-        $seguimiento = SeguimientoActividad::findOrFail($id);
-        $seguimiento->delete();
+        app(ActividadTareasService::class)->eliminarTarea((int) $id);
 
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento eliminado exitosamente.');
+    }
+
+    public function completar(Request $request, int $id)
+    {
+        $datos = $request->validate(['completada' => ['required', 'boolean']]);
+        app(ActividadTareasService::class)->completarTarea($id, (bool) $datos['completada']);
+
+        return back()->with('success', 'Estado de la tarea actualizado.');
     }
 }

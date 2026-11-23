@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\EnumTolerante;
 use App\Enums\EstadoActividad;
+use App\Enums\EstadoSeguimiento;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,6 +40,22 @@ class Actividad extends Model
     public function seguimientos(): HasMany
     {
         return $this->hasMany(SeguimientoActividad::class, 'id_actividad');
+    }
+
+    public function estadoVisible(): string
+    {
+        if ($this->estado === EstadoActividad::Cancelada) {
+            return 'Cancelada';
+        }
+        $tareas = $this->seguimientos;
+        if ($tareas->isEmpty()) {
+            return 'Programado';
+        }
+        if ($tareas->every(fn ($t) => filled($t->nombre_tarea) && $t->estado === EstadoSeguimiento::Completado)) {
+            return 'Terminado';
+        }
+
+        return $this->estado === EstadoActividad::Completada ? 'En Progreso' : ($this->estado?->value ?? 'Programado');
     }
 
     public function ingresos(): HasMany

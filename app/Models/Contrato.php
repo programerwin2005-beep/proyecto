@@ -36,7 +36,6 @@ class Contrato extends Model
 
     protected $fillable = [
         'id_miembro',
-        'id_lider_iglesia',
         'tipo_compensacion',
         'salario',
         'fecha_inicio',
@@ -55,11 +54,6 @@ class Contrato extends Model
     public function miembro(): BelongsTo
     {
         return $this->belongsTo(Miembro::class, 'id_miembro');
-    }
-
-    public function lider(): BelongsTo
-    {
-        return $this->belongsTo(LiderIglesia::class, 'id_lider_iglesia');
     }
 
     public function egresos(): HasMany

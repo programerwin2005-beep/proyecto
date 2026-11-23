@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ActividadRequest;
 use App\Models\Actividad;
 use App\Models\Ministerio;
+use App\Services\ActividadTareasService;
 use Illuminate\Http\Request;
 
 class ActividadController extends Controller
 {
     public function index(Request $request)
     {
-        $actividades = Actividad::with('ministerio')
+        $actividades = Actividad::with(['ministerio', 'seguimientos'])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $termino = trim($request->input('q'));
 
@@ -37,7 +38,7 @@ class ActividadController extends Controller
 
     public function store(ActividadRequest $request)
     {
-        Actividad::create($request->validated());
+        app(ActividadTareasService::class)->guardarActividad($request->validated());
 
         return redirect()->route('actividades.index')->with('success', 'Actividad registrada con éxito.');
     }
@@ -59,8 +60,7 @@ class ActividadController extends Controller
 
     public function update(ActividadRequest $request, $id)
     {
-        $actividad = Actividad::withTrashed()->findOrFail($id);
-        $actividad->update($request->validated());
+        app(ActividadTareasService::class)->guardarActividad($request->validated(), (int) $id);
 
         return redirect()->route('actividades.index')->with('success', 'Actividad actualizada con éxito.');
     }
@@ -72,5 +72,4 @@ class ActividadController extends Controller
 
         return redirect()->route('actividades.index')->with('success', 'Actividad eliminada exitosamente.');
     }
-
 }

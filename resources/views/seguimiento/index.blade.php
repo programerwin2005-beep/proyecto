@@ -20,9 +20,10 @@
             <thead>
                 <tr>
                     <th>Actividad</th>
+                    <th>Tarea</th>
                     <th>Fecha Registro</th>
                     <th>Responsable</th>
-                    <th>% Avance</th>
+                    <th>Tarea completada</th>
                     <th>Estado</th>
                     <th>Observación</th>
                     <th>Acciones</th>
@@ -40,9 +41,10 @@
                     ?>
                     <tr style="@if($seguimiento->trashed()) opacity: 0.5; @endif">
                         <td style="font-weight: 600;">{{ $seguimiento->actividad->nombre ?? 'N/A' }}</td>
+                        <td>{{ $seguimiento->nombre_tarea ?? 'Histórico pendiente de revisión' }}</td>
                         <td>{{ \Carbon\Carbon::parse($seguimiento->fecha_registro)->format('d/m/Y') }}</td>
                         <td>{{ $seguimiento->responsable }}</td>
-                        <td><span class="badge badge-info">{{ $seguimiento->porcentaje_avance }}%</span></td>
+                        <td>@include('seguimiento.completar', ['tarea' => $seguimiento])</td>
                         <td><span class="badge {{ $estadoBadge }}">{{ $seguimiento->estado?->value }}</span></td>
                         <td>{{ Str::limit($seguimiento->observacion, 50) ?: 'N/A' }}</td>
                         <td>
@@ -63,7 +65,7 @@
                 
 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             No hay seguimientos registrados.
                         </td>
                     </tr>

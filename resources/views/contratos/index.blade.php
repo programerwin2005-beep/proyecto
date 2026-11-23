@@ -52,7 +52,6 @@
             <thead>
                 <tr>
                     <th>Miembro</th>
-                    <th>Líder Asignado</th>
                     <th>Tipo</th>
                     <th>Salario</th>
                     <th>Inicio</th>
@@ -80,7 +79,6 @@
                     ?>
                     <tr style="@if($contrato->trashed()) opacity: 0.5; @endif">
                         <td>{{ $contrato->miembro->nombre ?? 'N/A' }}</td>
-                        <td>{{ $contrato->lider?->nombre ?? 'N/A' }}</td>
                         <td><span class="badge {{ $tipoBadge }}">{{ $contrato->tipo_compensacion?->value }}</span></td>
                         <td style="font-weight: 600;">Bs {{ number_format($contrato->salario, 2) }}</td>
                         <td>{{ \Carbon\Carbon::parse($contrato->fecha_inicio)->format('d/m/Y') }}</td>
@@ -127,7 +125,7 @@
                 
 @empty
                     <tr>
-                        <td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">
                             No hay contratos registrados.
                         </td>
                     </tr>

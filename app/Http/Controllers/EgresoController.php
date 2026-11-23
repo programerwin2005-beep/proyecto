@@ -83,7 +83,7 @@ class EgresoController extends Controller
 
     public function createPagoContrato()
     {
-        $contratos = Contrato::with(['miembro', 'lider.cargo', 'egresos'])
+        $contratos = Contrato::with(['miembro', 'egresos'])
             ->where('activo', true)
             ->orderByDesc('fecha_inicio')
             ->get()
@@ -126,7 +126,7 @@ class EgresoController extends Controller
         }
 
         $egreso = DB::transaction(function () use ($validated) {
-            $contrato = Contrato::with(['miembro', 'lider', 'egresos'])
+            $contrato = Contrato::with(['miembro', 'egresos'])
                 ->lockForUpdate()
                 ->findOrFail($validated['id_contrato']);
 
@@ -155,7 +155,6 @@ class EgresoController extends Controller
             }
 
             $responsable = $contrato->miembro?->nombre
-                ?? $contrato->lider?->nombre
                 ?? 'Contrato #'.$contrato->id;
 
             $datos = [
