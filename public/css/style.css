@@ -971,11 +971,29 @@ input[type="date"] {
         left: -300px;
         width: 280px;
         height: 100vh !important;
+        height: 100dvh !important;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
         margin: 0 !important;
         border-radius: 0 !important;
         z-index: 999;
         transition: left 0.3s ease;
         border-right: 1px solid var(--card-border);
+    }
+
+    .sidebar-header,
+    .sidebar-user-wrap {
+        flex-shrink: 0;
+    }
+
+    .nav-menu {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .sidebar-overlay {
+        height: 100dvh;
     }
 
     .sidebar.open {
