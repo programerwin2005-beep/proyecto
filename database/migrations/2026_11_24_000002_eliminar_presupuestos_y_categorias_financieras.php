@@ -103,6 +103,24 @@ return new class extends Migration
         // la use, y en estas tablas hay más de un índice sobre `categoria_id`.
         // Se eliminan todos los índices que la incluyan antes de quitar la
         // columna.
+        // Quitar primero las claves foráneas que utilizan categoria_id.
+if (DB::getDriverName() === 'mysql') {
+    $claves = DB::select(
+        'SELECT DISTINCT CONSTRAINT_NAME AS nombre
+         FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+           AND REFERENCED_TABLE_NAME IS NOT NULL',
+        [$tabla, 'categoria_id']
+    );
+
+    foreach ($claves as $clave) {
+        Schema::table($tabla, function (Blueprint $blueprint) use ($clave) {
+            $blueprint->dropForeign($clave->nombre);
+        });
+    }
+}
         foreach (Schema::getIndexes($tabla) as $indice) {
             if (in_array('categoria_id', $indice['columns'], true)) {
                 Schema::table($tabla, fn (Blueprint $blueprint) => $blueprint->dropIndex($indice['name']));
