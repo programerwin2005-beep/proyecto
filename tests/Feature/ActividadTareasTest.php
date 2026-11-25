@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\EstadoActividad;
 use App\Models\Actividad;
+use App\Models\Cargo;
+use App\Models\LiderIglesia;
+use App\Models\Miembro;
 use App\Models\Ministerio;
 use App\Models\Role;
 use App\Models\SeguimientoActividad;
@@ -30,6 +33,12 @@ class ActividadTareasTest extends TestCase
     private function evento(): Actividad
     {
         $ministerio = Ministerio::create(['nombre' => 'Juventud']);
+        Miembro::create([
+            'nombre' => 'Ana Pérez',
+            'fecha_ingreso' => today()->toDateString(),
+            'estado' => 'Activo',
+            'id_ministerio' => $ministerio->id,
+        ]);
         $this->post(route('actividades.store'), [
             'id_ministerio' => $ministerio->id,
             'nombre' => 'Encuentro de jóvenes',
@@ -153,6 +162,58 @@ class ActividadTareasTest extends TestCase
         $this->delete(route('seguimiento.destroy', $idAnterior))->assertRedirect();
         $this->assertSoftDeleted('seguimiento_actividades', ['id' => $idAnterior, 'observacion' => $anterior['observacion']]);
         $this->assertSame(EstadoActividad::Completada, $evento->fresh()->estado);
+    }
+
+    public function test_rechaza_responsable_ajeno_al_ministerio_de_la_actividad(): void
+    {
+        $evento = $this->evento();
+        $datos = $this->datos($evento);
+        $datos['responsable'] = 'Pedro Ajeno';
+
+        $this->post(route('seguimiento.store'), $datos)->assertSessionHasErrors('responsable');
+        $this->assertDatabaseCount('seguimiento_actividades', 0);
+    }
+
+    public function test_permite_al_lider_del_ministerio_como_responsable(): void
+    {
+        $evento = $this->evento();
+        $cargo = Cargo::create(['nombre' => 'Pastor', 'nivel_jerarquico' => 1]);
+        $lider = LiderIglesia::create([
+            'id_cargo' => $cargo->id,
+            'nombre' => 'Luis Líder',
+            'fecha_inicio' => today()->toDateString(),
+            'activo' => true,
+        ]);
+        $evento->ministerio->update(['id_lider_iglesia' => $lider->id]);
+
+        $datos = $this->datos($evento);
+        $datos['responsable'] = 'Luis Líder';
+
+        $this->post(route('seguimiento.store'), $datos)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseHas('seguimiento_actividades', ['responsable' => 'Luis Líder']);
+    }
+
+    public function test_conserva_el_responsable_historico_si_no_cambia_de_actividad(): void
+    {
+        $evento = $this->evento();
+        $tarea = SeguimientoActividad::create([
+            'id_actividad' => $evento->id,
+            'nombre_tarea' => 'Tarea heredada',
+            'fecha_registro' => today()->toDateString(),
+            'responsable' => 'Nombre Antiguo',
+            'estado' => 'Pendiente',
+        ]);
+
+        $datos = $this->datos($evento, $tarea->nombre_tarea);
+        $datos['responsable'] = 'Nombre Antiguo';
+        $this->put(route('seguimiento.update', $tarea), $datos)->assertSessionHasNoErrors();
+        $this->assertSame('Nombre Antiguo', $tarea->fresh()->responsable);
+        $this->get(route('seguimiento.edit', $tarea))->assertOk()
+            ->assertSee('Nombre Antiguo (responsable actual)');
+
+        $otro = $this->evento();
+        $datos['id_actividad'] = $otro->id;
+        $this->put(route('seguimiento.update', $tarea), $datos)->assertSessionHasErrors('responsable');
     }
 
     public function test_kpi_promedia_todas_las_tareas_vigentes(): void

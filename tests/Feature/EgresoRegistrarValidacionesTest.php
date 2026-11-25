@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Cargo;
-use App\Models\CategoriaFinanciera;
 use App\Models\Contrato;
 use App\Models\Ingreso;
 use App\Models\LiderIglesia;
@@ -60,10 +59,6 @@ class EgresoRegistrarValidacionesTest extends TestCase
         return array_merge([
             'id_contrato' => null,
             'id_lider_iglesia' => null,
-            'categoria_id' => CategoriaFinanciera::query()
-                ->where('nombre', 'Salarios')
-                ->where('naturaleza', CategoriaFinanciera::NATURALEZA_EGRESO)
-                ->value('id'),
             'tipo_egreso' => 'Salarios',
             'monto' => 500,
             'fecha' => now()->toDateString(),

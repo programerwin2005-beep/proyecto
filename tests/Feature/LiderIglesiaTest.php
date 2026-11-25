@@ -9,7 +9,6 @@ use App\Models\Ministerio;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -76,7 +75,7 @@ class LiderIglesiaTest extends TestCase
             ->assertDontSee('Ana Torres');
     }
 
-    public function test_el_lider_dirige_el_ministerio_y_los_miembros_solo_integran_el_pivote(): void
+    public function test_el_lider_dirige_el_ministerio_y_los_miembros_pertenecen_al_ministerio(): void
     {
         $lider = LiderIglesia::create([
             'id_cargo' => $this->cargo()->id,
@@ -101,10 +100,8 @@ class LiderIglesiaTest extends TestCase
 
         $this->assertSame($lider->id, $ministerio->id_lider_iglesia);
 
-        $integrantes = DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->whereNull('deleted_at')
-            ->pluck('miembro_id')
+        $integrantes = Miembro::where('id_ministerio', $ministerio->id)
+            ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();
 

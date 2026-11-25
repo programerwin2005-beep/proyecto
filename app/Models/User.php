@@ -113,7 +113,7 @@ class User extends Authenticatable
             }
 
             foreach ($role->permisos as $permiso) {
-                foreach (['ver', 'crear', 'editar', 'eliminar', 'buscar'] as $accion) {
+                foreach (array_keys(config('permisos.acciones', [])) as $accion) {
                     if ($permiso->{$accion}) {
                         $mapa["{$permiso->modulo}.{$accion}"] = true;
                     }

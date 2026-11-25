@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 use App\Enums\EstadoMiembro;
 use App\Models\Miembro;
+use App\Models\Ministerio;
 use App\Rules\SoloLetras;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class MinisterioRequest extends FormRequest
@@ -33,22 +33,33 @@ class MinisterioRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $miembro = Miembro::find($value);
 
-                    if (! $miembro || $miembro->estado === EstadoMiembro::Activo) {
+                    if (! $miembro) {
                         return;
                     }
 
-                    // Un miembro que ya integra el ministerio puede seguir
-                    // seleccionado aunque haya quedado inactivo; así editar el
-                    // ministerio no lo expulsa sin querer.
                     $ministerioId = $this->route('ministerio');
+                    $idActual = $ministerioId instanceof Ministerio
+                        ? $ministerioId->id
+                        : $ministerioId;
 
-                    $yaIntegra = $ministerioId && DB::table('miembro_ministerio')
-                        ->where('ministerio_id', $ministerioId)
-                        ->where('miembro_id', $value)
-                        ->whereNull('deleted_at')
-                        ->exists();
+                    if ($miembro->id_ministerio
+                        && (! $idActual || (int) $miembro->id_ministerio !== (int) $idActual)) {
+                        $otro = Ministerio::find($miembro->id_ministerio);
 
-                    if ($yaIntegra) {
+                        $fail('El miembro '.$miembro->nombre.' ya pertenece al ministerio '
+                            .($otro?->nombre ?? 'seleccionado').'.');
+
+                        return;
+                    }
+
+                    if ($miembro->estado === EstadoMiembro::Activo) {
+                        return;
+                    }
+
+                    // Un miembro inactivo que ya integra el ministerio puede
+                    // seguir seleccionado; así editar el ministerio no lo
+                    // expulsa sin querer.
+                    if ($idActual && (int) $miembro->id_ministerio === (int) $idActual) {
                         return;
                     }
 

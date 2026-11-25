@@ -45,7 +45,7 @@
                         <td>
                             @if($docente->user_id)
                                 <span class="badge badge-active" title="{{ $docente->user?->email }}">Con acceso</span>
-                            @elseif(auth()->user()->puede('docentes', 'editar'))
+                            @elseif(auth()->user()->puede('docentes', 'gestionar_acceso'))
                                 <a href="{{ route('docentes.acceso', $docente->id) }}" class="btn" style="width: auto; padding: 4px 10px; font-size: 0.8rem;">Crear acceso</a>
                             @else
                                 <span class="badge badge-inactive">Sin acceso</span>

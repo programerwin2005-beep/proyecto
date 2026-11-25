@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\TipoEgreso;
 use App\Http\Requests\EgresoRequest;
-use App\Models\CategoriaFinanciera;
 use App\Models\Contrato;
 use App\Models\Egreso;
 use App\Models\Ingreso;
@@ -70,7 +69,7 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        $datos = $this->conCategoria($request->validated());
+        $datos = $request->validated();
         // Los pagos de contrato solo se registran desde «Pagar Contrato».
         unset($datos['id_contrato']);
         // La fecha del egreso no se puede modificar: siempre es la del día.
@@ -168,7 +167,7 @@ class EgresoController extends Controller
                 'descripcion' => ($validated['descripcion'] ?? null) ?: 'Pago de contrato #'.$contrato->id.' - '.$responsable,
             ];
 
-            return Egreso::create($this->conCategoria($datos));
+            return Egreso::create($datos);
         });
 
         if ($egreso instanceof \Illuminate\Http\RedirectResponse) {
@@ -204,7 +203,7 @@ class EgresoController extends Controller
                 ->withInput();
         }
 
-        $datos = $this->conCategoria($request->validated());
+        $datos = $request->validated();
         // La relación con contrato no se modifica desde el egreso normal.
         unset($datos['id_contrato']);
         // La fecha original no se modifica.
@@ -212,24 +211,6 @@ class EgresoController extends Controller
         $egreso->update($datos);
 
         return redirect()->route('egresos.index')->with('success', 'Egreso actualizado con éxito.');
-    }
-
-    /**
-     * Completa `categoria_id` a partir del tipo cuando el formulario no lo envía.
-     *
-     * @param  array<string, mixed>  $datos
-     * @return array<string, mixed>
-     */
-    private function conCategoria(array $datos): array
-    {
-        if (empty($datos['categoria_id']) && ! empty($datos['tipo_egreso'])) {
-            $datos['categoria_id'] = CategoriaFinanciera::idPara(
-                $datos['tipo_egreso'],
-                CategoriaFinanciera::NATURALEZA_EGRESO
-            );
-        }
-
-        return $datos;
     }
 
     public function destroy($id)

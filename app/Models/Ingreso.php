@@ -33,7 +33,6 @@ class Ingreso extends Model
         'id_actividad',
         'id_culto',
         'pago_id',
-        'categoria_id',
         'monto_total',
         'fecha',
         'tipo',
@@ -46,11 +45,6 @@ class Ingreso extends Model
             'tipo' => EnumTolerante::class.':'.TipoIngreso::class,
             'metodo_pago' => EnumTolerante::class.':'.MetodoPago::class,
         ];
-    }
-
-    public function categoria(): BelongsTo
-    {
-        return $this->belongsTo(CategoriaFinanciera::class, 'categoria_id');
     }
 
     public function actividad(): BelongsTo

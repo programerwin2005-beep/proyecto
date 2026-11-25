@@ -21,16 +21,18 @@
 <div class="glass-panel" style="padding: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-weight: 700; color: var(--text-primary);">Lista de Ingresos</h2>
-        @if(auth()->user()->puede('ingresos', 'crear'))
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            @if(auth()->user()->puede('ingresos', 'crear'))
             <a href="{{ route('ingresos.create') }}" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">
                 + Nuevo Ingreso
             </a>
+            @endif
+            @if(auth()->user()->puede('ingresos', 'ingreso_actividad'))
             <a href="{{ route('ingresos.actividad.create') }}" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem; background: transparent; border: 1px solid var(--card-border); color: var(--text-primary); text-decoration: none;">
                 + Ingreso Actividad
             </a>
+            @endif
         </div>
-        @endif
     </div>
 
     @include('components.search-bar', ['action' => route('ingresos.index'), 'label' => 'Buscar ingreso', 'placeholder' => 'Tipo, método, actividad o culto...'])

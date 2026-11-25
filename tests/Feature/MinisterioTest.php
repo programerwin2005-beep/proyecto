@@ -9,7 +9,6 @@ use App\Models\Ministerio;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MinisterioTest extends TestCase
@@ -115,7 +114,7 @@ class MinisterioTest extends TestCase
         $this->assertDatabaseMissing('ministerios', ['nombre' => 'Alabanza']);
     }
 
-    public function test_crea_un_ministerio_con_miembros_solo_en_el_pivote(): void
+    public function test_crea_un_ministerio_y_asigna_el_ministerio_a_sus_miembros(): void
     {
         $lider = $this->lider();
 
@@ -134,28 +133,35 @@ class MinisterioTest extends TestCase
         $ministerio = Ministerio::where('nombre', 'Alabanza')->firstOrFail();
 
         $this->assertCount(2, $ministerio->fresh()->miembros);
-        $this->assertSame(2, DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->whereNull('deleted_at')
-            ->count());
-
-        $this->assertNotNull(DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->where('miembro_id', $ana->id)
-            ->value('fecha_inicio'));
+        $this->assertSame($ministerio->id, $ana->fresh()->id_ministerio);
+        $this->assertSame($ministerio->id, $beto->fresh()->id_ministerio);
 
         // El líder dirige el ministerio, pero no se guarda como miembro.
-        $integrantes = DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->whereNull('deleted_at')
-            ->pluck('miembro_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        $this->assertEqualsCanonicalizing([$ana->id, $beto->id], $integrantes);
+        $this->assertEqualsCanonicalizing(
+            [$ana->id, $beto->id],
+            Miembro::where('id_ministerio', $ministerio->id)->pluck('id')->all()
+        );
     }
 
-    public function test_quita_y_reagrega_miembros_sin_duplicar_y_conserva_la_fecha_inicio(): void
+    public function test_rechaza_un_miembro_que_ya_pertenece_a_otro_ministerio(): void
+    {
+        $otro = Ministerio::create(['nombre' => 'Jóvenes']);
+        $ana = $this->miembro('Ana Torres');
+        $ana->update(['id_ministerio' => $otro->id]);
+
+        $this->actingAs($this->administrador())
+            ->post('/ministerios', [
+                'nombre' => 'Alabanza',
+                'miembros_presente' => 1,
+                'miembros' => [$ana->id],
+            ])
+            ->assertSessionHasErrors('miembros.0');
+
+        $this->assertDatabaseMissing('ministerios', ['nombre' => 'Alabanza']);
+        $this->assertSame($otro->id, $ana->fresh()->id_ministerio);
+    }
+
+    public function test_quita_y_reagrega_miembros_actualizando_su_pertenencia(): void
     {
         $lider = $this->lider();
         $ana = $this->miembro('Ana Torres');
@@ -171,11 +177,6 @@ class MinisterioTest extends TestCase
 
         $ministerio = Ministerio::where('nombre', 'Alabanza')->firstOrFail();
 
-        $fechaOriginal = DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->where('miembro_id', $ana->id)
-            ->value('fecha_inicio');
-
         $this->actingAs($this->administrador())
             ->put('/ministerios/'.$ministerio->id, [
                 'nombre' => 'Alabanza',
@@ -185,10 +186,8 @@ class MinisterioTest extends TestCase
             ])
             ->assertRedirect(route('ministerios.index'));
 
-        $this->assertSoftDeleted('miembro_ministerio', [
-            'ministerio_id' => $ministerio->id,
-            'miembro_id' => $ana->id,
-        ]);
+        $this->assertNull($ana->fresh()->id_ministerio);
+        $this->assertSame($ministerio->id, $beto->fresh()->id_ministerio);
         $this->assertCount(1, $ministerio->fresh()->miembros);
 
         $this->actingAs($this->administrador())
@@ -200,21 +199,8 @@ class MinisterioTest extends TestCase
             ])
             ->assertRedirect(route('ministerios.index'));
 
-        $this->assertNotSoftDeleted('miembro_ministerio', [
-            'ministerio_id' => $ministerio->id,
-            'miembro_id' => $ana->id,
-        ]);
+        $this->assertSame($ministerio->id, $ana->fresh()->id_ministerio);
         $this->assertCount(2, $ministerio->fresh()->miembros);
-
-        $this->assertSame(1, DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->where('miembro_id', $ana->id)
-            ->count());
-
-        $this->assertSame($fechaOriginal, DB::table('miembro_ministerio')
-            ->where('ministerio_id', $ministerio->id)
-            ->where('miembro_id', $ana->id)
-            ->value('fecha_inicio'));
     }
 
     public function test_rechaza_miembros_inexistentes(): void
@@ -228,6 +214,20 @@ class MinisterioTest extends TestCase
             ->assertSessionHasErrors('miembros.0');
 
         $this->assertDatabaseMissing('ministerios', ['nombre' => 'Alabanza']);
+    }
+
+    public function test_eliminar_ministerio_libera_a_sus_miembros(): void
+    {
+        $ana = $this->miembro('Ana Torres');
+        $ministerio = Ministerio::create(['nombre' => 'Alabanza']);
+        $ana->update(['id_ministerio' => $ministerio->id]);
+
+        $this->actingAs($this->administrador())
+            ->delete('/ministerios/'.$ministerio->id)
+            ->assertRedirect(route('ministerios.index'));
+
+        $this->assertNull($ana->fresh()->id_ministerio);
+        $this->assertSoftDeleted('ministerios', ['id' => $ministerio->id]);
     }
 
     public function test_sin_checkboxes_desmarca_todos_los_miembros_al_editar(): void
@@ -254,10 +254,7 @@ class MinisterioTest extends TestCase
             ->assertRedirect(route('ministerios.index'));
 
         $this->assertCount(0, $ministerio->fresh()->miembros);
-        $this->assertSoftDeleted('miembro_ministerio', [
-            'ministerio_id' => $ministerio->id,
-            'miembro_id' => $ana->id,
-        ]);
+        $this->assertNull($ana->fresh()->id_ministerio);
     }
 
     private function miembro(string $nombre): Miembro

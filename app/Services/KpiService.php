@@ -8,7 +8,6 @@ use App\Enums\EstadoInscripcion;
 use App\Enums\EstadoMiembro;
 use App\Enums\TipoEgreso;
 use App\Enums\TipoIngreso;
-use App\Models\CategoriaFinanciera;
 use App\Models\Ingreso;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
@@ -140,22 +139,14 @@ final class KpiService
             ->all();
 
         $porMinisterio = DB::table('ministerios as m')
-            ->leftJoin('miembro_ministerio as mm', function ($join) use ($hoy) {
-                $join->on('mm.ministerio_id', '=', 'm.id')
-                    ->whereNull('mm.deleted_at')
-                    ->where(function ($query) use ($hoy) {
-                        $query->whereNull('mm.fecha_fin')
-                            ->orWhere('mm.fecha_fin', '>=', $hoy);
-                    });
-            })
             ->leftJoin('miembros as mi', function ($join) {
-                $join->on('mi.id', '=', 'mm.miembro_id')
+                $join->on('mi.id_ministerio', '=', 'm.id')
                     ->whereNull('mi.deleted_at');
             })
             ->whereNull('m.deleted_at')
             ->groupBy('m.id', 'm.nombre')
             ->select('m.id', 'm.nombre')
-            ->selectRaw('COUNT(DISTINCT mi.id) as miembros')
+            ->selectRaw('COUNT(mi.id) as miembros')
             ->orderBy('m.nombre')
             ->get()
             ->map(fn ($fila) => [
@@ -413,13 +404,9 @@ final class KpiService
         // `tipo` también es una columna real de `ingresos`, por lo que MySQL
         // interpreta `GROUP BY tipo` como `ingresos.tipo` y rechaza la
         // consulta con ONLY_FULL_GROUP_BY. Se agrupa por la expresión.
-        $expresionTipo = "COALESCE(cat.nombre, {$this->sqlTipoIngreso('ingresos.tipo')})";
+        $expresionTipo = $this->sqlTipoIngreso('ingresos.tipo');
 
         $composicion = $this->ingresosQuery()
-            ->leftJoin('categorias_financieras as cat', function ($join) {
-                $join->on('cat.id', '=', 'ingresos.categoria_id')
-                    ->whereNull('cat.deleted_at');
-            })
             ->whereBetween(DB::raw(Ingreso::SQL_FECHA), [$desde, $hasta])
             ->selectRaw("{$expresionTipo} as tipo")
             ->selectRaw('SUM('.Ingreso::SQL_MONTO.') as total')
@@ -462,19 +449,14 @@ final class KpiService
         $diezmos = array_sum(array_column($porCulto, 'diezmo'));
         $ofrendas = array_sum(array_column($porCulto, 'ofrenda'));
 
-        $categoriaSalarios = CategoriaFinanciera::idPara(
-            TipoEgreso::Salarios->value,
-            CategoriaFinanciera::NATURALEZA_EGRESO
-        );
-
-        // Gasto de personal: contrato, pago directo a líder o categoría de
-        // salarios. Cada fila de `egresos` se cuenta una sola vez aunque tenga
-        // contrato y líder a la vez (la validación lo impide, pero la consulta
-        // es igualmente segura).
+        // Gasto de personal: contrato, pago directo a líder o tipo de egreso
+        // de salarios. Cada fila de `egresos` se cuenta una sola vez aunque
+        // tenga contrato y líder a la vez (la validación lo impide, pero la
+        // consulta es igualmente segura).
         $personal = (float) DB::table('egresos')
             ->whereNull('deleted_at')
             ->whereBetween('fecha', [$desde, $hasta])
-            ->where(function ($query) use ($categoriaSalarios) {
+            ->where(function ($query) {
                 $query->whereNotNull('id_contrato')
                     ->orWhereNotNull('id_lider_iglesia')
                     ->orWhereIn('tipo_egreso', [
@@ -483,10 +465,6 @@ final class KpiService
                         'Sueldo',
                         'Salarios / Honorarios',
                     ]);
-
-                if ($categoriaSalarios !== null) {
-                    $query->orWhere('categoria_id', $categoriaSalarios);
-                }
             })
             ->sum('monto');
 

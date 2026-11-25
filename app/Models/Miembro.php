@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\EnumTolerante;
 use App\Enums\EstadoMiembro;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -25,6 +26,7 @@ class Miembro extends Model
         'sexo',
         'fecha_ingreso',
         'estado',
+        'id_ministerio',
     ];
 
     protected function casts(): array
@@ -44,12 +46,12 @@ class Miembro extends Model
         return $this->hasMany(Contrato::class, 'id_miembro');
     }
 
-    public function ministerios(): BelongsToMany
+    /**
+     * Un miembro pertenece a un solo ministerio.
+     */
+    public function ministerio(): BelongsTo
     {
-        return $this->belongsToMany(Ministerio::class, 'miembro_ministerio')
-            ->withPivot(['fecha_inicio', 'fecha_fin', 'deleted_at'])
-            ->withTimestamps()
-            ->wherePivotNull('deleted_at');
+        return $this->belongsTo(Ministerio::class, 'id_ministerio');
     }
 
     public function cursos(): BelongsToMany

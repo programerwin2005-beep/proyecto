@@ -10,7 +10,6 @@ use App\Enums\MetodoPago;
 use App\Enums\TipoCompensacion;
 use App\Enums\TipoEgreso;
 use App\Enums\TipoIngreso;
-use App\Models\CategoriaFinanciera;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -158,22 +157,36 @@ return new class extends Migration
         }
 
         $definiciones = [
-            CategoriaFinanciera::NATURALEZA_INGRESO => TipoIngreso::valores(),
-            CategoriaFinanciera::NATURALEZA_EGRESO => TipoEgreso::valores(),
+            'ingreso' => TipoIngreso::valores(),
+            'egreso' => TipoEgreso::valores(),
         ];
 
         foreach ($definiciones as $naturaleza => $nombres) {
             foreach ($nombres as $nombre) {
-                $categoria = CategoriaFinanciera::withTrashed()
-                    ->firstOrNew(['nombre' => $nombre, 'naturaleza' => $naturaleza]);
+                $existente = DB::table('categorias_financieras')
+                    ->where('nombre', $nombre)
+                    ->where('naturaleza', $naturaleza)
+                    ->first();
 
-                $categoria->activo = true;
+                if ($existente) {
+                    DB::table('categorias_financieras')
+                        ->where('id', $existente->id)
+                        ->update([
+                            'activo' => true,
+                            'deleted_at' => null,
+                            'updated_at' => now(),
+                        ]);
 
-                if ($categoria->exists && $categoria->trashed()) {
-                    $categoria->restore();
+                    continue;
                 }
 
-                $categoria->save();
+                DB::table('categorias_financieras')->insert([
+                    'nombre' => $nombre,
+                    'naturaleza' => $naturaleza,
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
         }
     }
@@ -194,14 +207,14 @@ return new class extends Migration
 
         $porNaturaleza = $categorias->groupBy('naturaleza');
 
-        foreach ($porNaturaleza->get(CategoriaFinanciera::NATURALEZA_INGRESO, collect()) as $categoria) {
+        foreach ($porNaturaleza->get('ingreso', collect()) as $categoria) {
             DB::table('ingresos')
                 ->whereNull('categoria_id')
                 ->where('tipo', $categoria->nombre)
                 ->update(['categoria_id' => $categoria->id]);
         }
 
-        foreach ($porNaturaleza->get(CategoriaFinanciera::NATURALEZA_EGRESO, collect()) as $categoria) {
+        foreach ($porNaturaleza->get('egreso', collect()) as $categoria) {
             DB::table('egresos')
                 ->whereNull('categoria_id')
                 ->where('tipo_egreso', $categoria->nombre)

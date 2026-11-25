@@ -22,10 +22,12 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-weight: 700; color: var(--text-primary);">Lista de Egresos</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            @if(auth()->user()->puede('egresos', 'crear'))
+            @if(auth()->user()->puede('egresos', 'pagar_contrato'))
             <a href="{{ route('egresos.pagar-contrato') }}" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); text-decoration: none;">
                 Pagar Contrato
             </a>
+            @endif
+            @if(auth()->user()->puede('egresos', 'crear'))
             <a href="{{ route('egresos.create') }}" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">
                 + Nuevo Egreso
             </a>

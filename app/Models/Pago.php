@@ -79,10 +79,6 @@ class Pago extends Model
                 'fecha' => $this->fecha_pago,
                 'metodo_pago' => $this->getRawOriginal('metodo_pago'),
                 'tipo' => TipoIngreso::Inscripcion,
-                'categoria_id' => CategoriaFinanciera::idPara(
-                    TipoIngreso::Inscripcion->value,
-                    CategoriaFinanciera::NATURALEZA_INGRESO
-                ),
             ]
         );
     }

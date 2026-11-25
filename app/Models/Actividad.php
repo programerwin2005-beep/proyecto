@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class Actividad extends Model
 {
@@ -40,6 +41,25 @@ class Actividad extends Model
     public function seguimientos(): HasMany
     {
         return $this->hasMany(SeguimientoActividad::class, 'id_actividad');
+    }
+
+    /**
+     * Nombres que pueden figurar como responsables de una tarea: el líder del
+     * ministerio y sus miembros. No crea relaciones nuevas, solo deriva la
+     * lista del vínculo que ya existe entre actividad, ministerio y personas.
+     *
+     * @return Collection<int, string>
+     */
+    public function nombresResponsables(): Collection
+    {
+        $this->loadMissing('ministerio.lider', 'ministerio.miembros');
+
+        return collect([$this->ministerio?->lider?->nombre])
+            ->merge($this->ministerio?->miembros?->pluck('nombre') ?? [])
+            ->filter(fn ($nombre) => filled($nombre))
+            ->map(fn ($nombre) => trim((string) $nombre))
+            ->unique()
+            ->values();
     }
 
     public function estadoVisible(): string

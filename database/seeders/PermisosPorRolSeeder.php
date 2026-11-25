@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PermisosPorRolSeeder extends Seeder
 {
@@ -21,7 +22,7 @@ class PermisosPorRolSeeder extends Seeder
         // El docente solo consulta sus sesiones y registra asistencia.
         'Docente' => [
             'sesiones' => ['ver'],
-            'asistencia' => ['ver', 'crear', 'buscar'],
+            'asistencia' => ['ver', 'crear', 'buscar', 'marcar_todos', 'ver_historial'],
             'reportes.asistencia' => ['ver'],
         ],
     ];
@@ -54,7 +55,8 @@ class PermisosPorRolSeeder extends Seeder
             $accionesPermitidas = $this->accionesPermitidas($tipo, $modulo, $accionesModulo);
 
             $valores = [];
-            foreach (self::ACCIONES as $accion) {
+            // También se invoca desde migraciones anteriores a las acciones nuevas.
+            foreach (array_intersect(array_keys(config('permisos.acciones', [])), Schema::getColumnListing('permisos')) as $accion) {
                 $valores[$accion] = in_array($accion, $accionesPermitidas, true);
             }
 

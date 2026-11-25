@@ -6,7 +6,6 @@ use App\Http\Requests\MinisterioRequest;
 use App\Models\LiderIglesia;
 use App\Models\Miembro;
 use App\Models\Ministerio;
-use App\Support\VinculoPivote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +48,7 @@ class MinisterioController extends Controller
 
             $ministerio = Ministerio::create($datos);
 
-            $this->sincronizarMiembros($ministerio, $miembros);
+            $this->asignarMiembros($ministerio, $miembros);
         });
 
         return redirect()->route('ministerios.index')->with('success', 'Ministerio creado con éxito.');
@@ -66,7 +65,7 @@ class MinisterioController extends Controller
     {
         $ministerio = Ministerio::with('miembros')->withTrashed()->findOrFail($id);
         $lideres = LiderIglesia::with('cargo')->orderBy('nombre')->get();
-        $miembros = $this->miembrosDisponibles();
+        $miembros = $this->miembrosDisponibles($ministerio);
         $seleccionados = old('miembros', $ministerio->miembros->pluck('id')->all());
 
         return view('ministerios.edit', compact('ministerio', 'lideres', 'miembros', 'seleccionados'));
@@ -84,7 +83,7 @@ class MinisterioController extends Controller
             $ministerio->update($datos);
 
             if ($sincronizar) {
-                $this->sincronizarMiembros($ministerio, $miembros);
+                $this->asignarMiembros($ministerio, $miembros);
             }
         });
 
@@ -94,35 +93,58 @@ class MinisterioController extends Controller
     public function destroy($id)
     {
         $ministerio = Ministerio::findOrFail($id);
-        $ministerio->delete();
+
+        DB::transaction(function () use ($ministerio) {
+            // Al eliminar el ministerio sus miembros quedan disponibles para
+            // asignarlos a otro; la FK no actúa porque el borrado es lógico.
+            Miembro::where('id_ministerio', $ministerio->id)
+                ->update(['id_ministerio' => null]);
+
+            $ministerio->delete();
+        });
 
         return redirect()->route('ministerios.index')->with('success', 'Ministerio eliminado exitosamente.');
     }
 
     /**
-     * Miembros que se pueden asignar al ministerio.
+     * Miembros que se pueden asignar: los que aún no tienen ministerio y, al
+     * editar, los que ya pertenecen a este ministerio.
      */
-    private function miembrosDisponibles()
+    private function miembrosDisponibles(?Ministerio $ministerio = null)
     {
-        return Miembro::whereNull('deleted_at')->orderBy('nombre')->get();
+        return Miembro::whereNull('deleted_at')
+            ->where(function ($query) use ($ministerio) {
+                $query->whereNull('id_ministerio');
+
+                if ($ministerio) {
+                    $query->orWhere('id_ministerio', $ministerio->id);
+                }
+            })
+            ->orderBy('nombre')
+            ->get();
     }
 
     /**
-     * La composición vive solo en el pivote. `fecha_inicio` se conserva al
-     * restaurar un vínculo que había sido desactivado.
+     * Cada miembro tiene un solo ministerio: los que se desmarcan quedan sin
+     * ministerio y los seleccionados pasan a este.
      *
      * @param  array<int, int|string>  $miembros
      */
-    private function sincronizarMiembros(Ministerio $ministerio, array $miembros): void
+    private function asignarMiembros(Ministerio $ministerio, array $miembros): void
     {
-        VinculoPivote::sincronizar(
-            $ministerio->miembros(),
-            $miembros,
-            [
-                'fecha_inicio' => now()->toDateString(),
-                'fecha_fin' => null,
-            ],
-            ['fecha_inicio']
-        );
+        $ids = array_values(array_unique(array_map('intval', $miembros)));
+
+        Miembro::where('id_ministerio', $ministerio->id)
+            ->when($ids !== [], fn ($query) => $query->whereNotIn('id', $ids))
+            ->update(['id_ministerio' => null]);
+
+        if ($ids === []) {
+            return;
+        }
+
+        Miembro::whereIn('id', $ids)
+            ->where(fn ($query) => $query->whereNull('id_ministerio')
+                ->orWhere('id_ministerio', $ministerio->id))
+            ->update(['id_ministerio' => $ministerio->id]);
     }
 }

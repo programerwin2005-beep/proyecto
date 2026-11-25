@@ -51,9 +51,34 @@
 
         </div>
 
+        @php
+            $actividadSeleccionada = (string) old('id_actividad', $seguimiento->id_actividad);
+            $responsableSeleccionado = old('responsable', $seguimiento->responsable);
+            $responsablesActuales = $actividades
+                ->firstWhere('id', (int) $actividadSeleccionada)
+                ?->nombresResponsables() ?? collect();
+        @endphp
+
         <div class="form-group">
             <label for="responsable" class="form-label">Responsable *</label>
-            <input id="responsable" type="text" name="responsable" class="form-control" value="{{ old('responsable', $seguimiento->responsable) }}" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" title="Solo letras y espacios" oninput="soloLetras(this)" required>
+            <select id="responsable" name="responsable" class="form-control" required>
+                <option value="">Seleccione un responsable...</option>
+                @if($responsableSeleccionado && ! $responsablesActuales->contains($responsableSeleccionado))
+                    <option value="{{ $responsableSeleccionado }}" data-actividad="{{ $actividadSeleccionada }}" selected>
+                        {{ $responsableSeleccionado }} (responsable actual)
+                    </option>
+                @endif
+                @foreach($actividades as $actividad)
+                    @foreach($actividad->nombresResponsables() as $nombre)
+                        <option value="{{ $nombre }}"
+                            data-actividad="{{ $actividad->id }}"
+                            {{ $actividadSeleccionada === (string) $actividad->id && $responsableSeleccionado === $nombre ? 'selected' : '' }}>
+                            {{ $nombre }} — {{ $actividad->ministerio?->nombre }}
+                        </option>
+                    @endforeach
+                @endforeach
+            </select>
+            <small style="color: var(--text-secondary);">Solo se listan los miembros y el líder del ministerio que organiza la actividad.</small>
         </div>
 
         <div class="form-group">
@@ -77,3 +102,40 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const actividad = document.getElementById('id_actividad');
+    const responsable = document.getElementById('responsable');
+
+    if (!actividad || !responsable) {
+        return;
+    }
+
+    const opciones = Array.from(responsable.querySelectorAll('option[data-actividad]'));
+
+    const filtrar = function () {
+        const seleccionada = actividad.value;
+        let conservaSeleccion = false;
+
+        opciones.forEach(function (opcion) {
+            const corresponde = opcion.dataset.actividad === seleccionada;
+            opcion.hidden = !corresponde;
+            opcion.disabled = !corresponde;
+
+            if (corresponde && opcion.selected) {
+                conservaSeleccion = true;
+            }
+        });
+
+        if (!conservaSeleccion) {
+            responsable.value = '';
+        }
+    };
+
+    actividad.addEventListener('change', filtrar);
+    filtrar();
+});
+</script>
+@endpush

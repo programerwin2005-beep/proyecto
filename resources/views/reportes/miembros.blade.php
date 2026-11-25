@@ -54,13 +54,13 @@
         ['label' => 'Miembro'],
         ['label' => 'Cursos e inscripciones'],
         ['label' => 'Contratos'],
-        ['label' => 'Ministerios actuales'],
+        ['label' => 'Ministerio actual'],
     ];
     $filasVinculos = $miembros->map(fn ($miembro) => [
         $miembro->nombre,
         $miembro->cursos->map(fn ($curso) => $curso->nombre . ' (' . $curso->pivot->estado . ')')->implode('; ') ?: 'Sin inscripciones',
         $miembro->contratos->map(fn ($contrato) => '#' . $contrato->id . ' · ' . ($contrato->tipo_compensacion?->value ?? 'Sin tipo') . ' · ' . $contrato->vigencia . ' · ' . $contrato->fecha_inicio . ' al ' . ($contrato->fecha_fin ?: 'sin fecha de fin'))->implode('; ') ?: 'Sin contratos',
-        $miembro->ministerios->pluck('nombre')->implode('; ') ?: 'Sin ministerio actual',
+        $miembro->ministerio?->nombre ?: 'Sin ministerio actual',
     ])->all();
 @endphp
 
@@ -165,7 +165,7 @@
         :rows="$filas"
         empty="No hay miembros que coincidan con los filtros aplicados."
     />
-    <p>Se incluyen inscripciones y contratos registrados no eliminados. Los ministerios corresponden a participaciones vigentes a la fecha de emisión.</p>
+    <p>Se incluyen inscripciones y contratos registrados no eliminados. El ministerio corresponde a la pertenencia actual del miembro.</p>
     <x-report.table
         :columns="$columnasVinculos"
         :rows="$filasVinculos"

@@ -143,8 +143,34 @@ $rutas += [
     'reportes.financiero' => ['reportes.financiero', 'ver'],
 ];
 
+$especiales = [
+    'asignar_roles' => ['label' => 'Asignar / quitar roles', 'modulo' => 'roles', 'hereda' => 'editar', 'rutas' => ['roles.user', 'roles.user.edit', 'roles.user.save', 'roles.user.clear']],
+    'gestionar_acceso' => ['label' => 'Gestionar acceso del docente', 'modulo' => 'docentes', 'hereda' => 'editar', 'rutas' => ['docentes.acceso', 'docentes.acceso.store']],
+    'generar_sesiones' => ['label' => 'Generar sesiones', 'modulo' => 'sesiones', 'hereda' => 'crear', 'rutas' => ['sesiones.generar']],
+    'marcar_todos' => ['label' => 'Marcar toda la asistencia', 'modulo' => 'asistencia', 'hereda' => 'crear', 'rutas' => ['asistencia.marcarTodos']],
+    'ver_historial' => ['label' => 'Consultar historial de asistencia', 'modulo' => 'asistencia', 'hereda' => 'ver', 'rutas' => ['asistencia.historial']],
+    'completar' => ['label' => 'Completar tarea', 'modulo' => 'seguimiento', 'hereda' => 'editar', 'rutas' => ['seguimiento.completar']],
+    'renovar' => ['label' => 'Renovar contrato', 'modulo' => 'contratos', 'hereda' => 'editar', 'rutas' => ['contratos.renovar']],
+    'pagar_contrato' => ['label' => 'Pagar contrato', 'modulo' => 'egresos', 'hereda' => 'crear', 'rutas' => ['egresos.pagar-contrato', 'egresos.pagar-contrato.store']],
+    'ingreso_actividad' => ['label' => 'Registrar ingreso de actividad', 'modulo' => 'ingresos', 'hereda' => 'crear', 'rutas' => ['ingresos.actividad.create', 'ingresos.actividad.store']],
+];
+
+foreach ($especiales as $accion => $meta) {
+    $acciones[$accion] = $meta['label'];
+    foreach ($categorias as &$grupo) {
+        if (isset($grupo[$meta['modulo']])) {
+            $grupo[$meta['modulo']]['acciones'][] = $accion;
+        }
+    }
+    unset($grupo);
+    foreach ($meta['rutas'] as $ruta) {
+        $rutas[$ruta] = [$meta['modulo'], $accion];
+    }
+}
+
 return [
     'acciones' => $acciones,
+    'especiales' => $especiales,
     'categorias' => $categorias,
     'rutas' => $rutas,
 

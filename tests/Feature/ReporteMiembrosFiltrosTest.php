@@ -38,7 +38,7 @@ class ReporteMiembrosFiltrosTest extends TestCase
         Inscripcion::create(['miembro_id' => $this->miembro->id, 'curso_id' => $this->curso->id, 'fecha_inscripcion' => today()->toDateString(), 'estado' => 'Activo']);
         Contrato::create(['id_miembro' => $this->miembro->id, 'tipo_compensacion' => 'Salario', 'salario' => 500, 'fecha_inicio' => today()->toDateString(), 'activo' => true]);
         $this->ministerio = Ministerio::create(['nombre' => 'Alabanza']);
-        $this->miembro->ministerios()->attach($this->ministerio, ['fecha_inicio' => today()->subMonth()->toDateString()]);
+        $this->miembro->update(['id_ministerio' => $this->ministerio->id]);
     }
 
     public function test_busca_y_muestra_cursos_contratos_y_ministerios(): void
@@ -47,7 +47,7 @@ class ReporteMiembrosFiltrosTest extends TestCase
             $this->get(route('reportes.miembros', ['q' => $texto]))
                 ->assertOk()->assertSee('Ana Pérez')->assertDontSee('Luis Sin Vinculos')
                 ->assertSee('Formación bíblica (Activo)')->assertSee('Salario')->assertSee('Vigente')
-                ->assertViewHas('miembros', fn ($miembros) => $miembros->count() === 1 && $miembros->first()->ministerios->contains($this->ministerio))
+                ->assertViewHas('miembros', fn ($miembros) => $miembros->count() === 1 && $miembros->first()->ministerio?->id === $this->ministerio->id)
                 ->assertViewHas('totales', fn ($totales) => $totales['total'] === 1 && $totales['activos'] === 1);
         }
     }
@@ -61,14 +61,14 @@ class ReporteMiembrosFiltrosTest extends TestCase
             ->assertSee('Sin inscripciones')->assertSee('Sin contratos')->assertSee('Sin ministerio actual');
     }
 
-    public function test_excluye_relaciones_eliminadas_y_ministerios_finalizados_o_futuros(): void
+    public function test_excluye_relaciones_eliminadas_y_miembros_sin_ministerio(): void
     {
-        $this->miembro->ministerios()->updateExistingPivot($this->ministerio->id, ['fecha_fin' => today()->subDay()->toDateString()]);
+        $this->miembro->update(['id_ministerio' => null]);
         $this->get(route('reportes.miembros', ['ministerios' => 'con']))->assertOk()
             ->assertViewHas('miembros', fn ($filas) => $filas->isEmpty());
-        $this->miembro->ministerios()->updateExistingPivot($this->ministerio->id, ['fecha_inicio' => today()->addDay()->toDateString(), 'fecha_fin' => null]);
-        $this->get(route('reportes.miembros', ['ministerio_id' => $this->ministerio->id]))->assertOk()
-            ->assertViewHas('miembros', fn ($filas) => $filas->isEmpty());
+        $this->get(route('reportes.miembros', ['ministerios' => 'sin']))->assertOk()
+            ->assertViewHas('miembros', fn ($filas) => $filas->pluck('id')->contains($this->miembro->id));
+
         $this->miembro->inscripciones->first()->delete();
         $this->miembro->contratos->first()->delete();
         $this->get(route('reportes.miembros', ['curso_id' => $this->curso->id]))->assertOk()

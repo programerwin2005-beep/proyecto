@@ -7,7 +7,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-weight: 700; color: var(--text-primary);">Detalle del Docente</h2>
         <div style="display: flex; gap: 10px;">
-            @if(!$docente->user && auth()->user()->puede('docentes', 'editar'))
+            @if(!$docente->user && auth()->user()->puede('docentes', 'gestionar_acceso'))
             <a href="{{ route('docentes.acceso', $docente->id) }}" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">Crear acceso</a>
             @endif
             @if(auth()->user()->puede('docentes', 'editar'))

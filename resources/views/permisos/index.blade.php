@@ -7,7 +7,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
             <h2 style="font-weight: 700; color: var(--text-primary); margin: 0;">Administrar Permisos</h2>
-            <p style="color: var(--text-secondary); margin: 6px 0 0;">Selecciona un rol para definir qué puede ver, crear, editar, eliminar y buscar en cada módulo.</p>
+            <p style="color: var(--text-secondary); margin: 6px 0 0;">Selecciona un rol para configurar sus acciones generales y específicas en cada módulo.</p>
         </div>
         <a href="{{ route('roles.index') }}" class="btn" style="background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); text-decoration: none; width: auto; padding: 8px 16px; font-size: 0.9rem;">Administrar Roles</a>
     </div>

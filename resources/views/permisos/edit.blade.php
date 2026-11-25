@@ -41,9 +41,10 @@
                         <thead>
                             <tr>
                                 <th style="text-align: left;">Módulo</th>
-                                @foreach($acciones as $accionKey => $accionLabel)
+                                @foreach(array_diff_key($acciones, config('permisos.especiales')) as $accionKey => $accionLabel)
                                     <th style="text-align: center;">{{ $accionLabel }}</th>
                                 @endforeach
+                                <th>Acciones específicas</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -51,26 +52,42 @@
                                 @php $permisoActual = $actuales->get($modulo); @endphp
                                 <tr>
                                     <td style="font-weight: 600;">{{ $meta['label'] ?? $modulo }}</td>
-                                    @foreach($acciones as $accionKey => $accionLabel)
+                                    @foreach(array_diff_key($acciones, config('permisos.especiales')) as $accionKey => $accionLabel)
                                         <td style="text-align: center;">
                                             @if(in_array($accionKey, $meta['acciones'] ?? [], true))
                                                 @php
-                                                    $marcado = old(
-                                                        "permisos.{$modulo}.{$accionKey}",
-                                                        $permisoActual ? (bool) $permisoActual->{$accionKey} : false
-                                                    );
+                                                    $marcado = $role->nombre === 'Administrador' || (session()->hasOldInput()
+                                                        ? (old('permisos', [])[$modulo][$accionKey] ?? false)
+                                                        : (bool) $permisoActual?->{$accionKey});
                                                 @endphp
                                                 <input type="checkbox"
                                                        name="permisos[{{ $modulo }}][{{ $accionKey }}]"
                                                        value="1"
                                                        aria-label="{{ $meta['label'] ?? $modulo }}: {{ $accionLabel }}"
                                                        style="width: auto; cursor: pointer;"
-                                                       @checked($marcado)>
+                                                        @checked($marcado)>
                                             @else
                                                 <span style="color: var(--text-secondary);">—</span>
                                             @endif
                                         </td>
                                     @endforeach
+                                    <td>
+                                        @foreach(config('permisos.especiales') as $accionKey => $especial)
+                                            @if(in_array($accionKey, $meta['acciones'], true))
+                                                @php
+                                                    $marcado = $role->nombre === 'Administrador' || (session()->hasOldInput()
+                                                        ? (old('permisos', [])[$modulo][$accionKey] ?? false)
+                                                        : (bool) $permisoActual?->{$accionKey});
+                                                @endphp
+                                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; white-space: normal;">
+                                                    <input type="checkbox" name="permisos[{{ $modulo }}][{{ $accionKey }}]"
+                                                        value="1" style="width: auto;" @checked($marcado)
+                                                        aria-label="{{ $meta['label'] }}: {{ $especial['label'] }}">
+                                                    {{ $especial['label'] }}
+                                                </label>
+                                            @endif
+                                        @endforeach
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

@@ -68,7 +68,7 @@
                 @endforelse
             </div>
             <small style="color: var(--text-secondary); font-size: 12px;">
-                La composición se guarda únicamente en el pivote miembro_ministerio. El líder se asigna aparte y no se duplica como miembro.
+                La composición se guarda en el miembro (un solo ministerio por miembro). El líder se asigna aparte y no se duplica como miembro.
             </small>
         </div>
 

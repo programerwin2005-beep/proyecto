@@ -17,7 +17,6 @@ class Egreso extends Model
     protected $fillable = [
         'id_contrato',
         'id_lider_iglesia',
-        'categoria_id',
         'tipo_egreso',
         'monto',
         'fecha',
@@ -33,11 +32,6 @@ class Egreso extends Model
             'tipo_egreso' => EnumTolerante::class.':'.TipoEgreso::class,
             'periodo_inicio' => 'date',
         ];
-    }
-
-    public function categoria(): BelongsTo
-    {
-        return $this->belongsTo(CategoriaFinanciera::class, 'categoria_id');
     }
 
     public function contrato(): BelongsTo

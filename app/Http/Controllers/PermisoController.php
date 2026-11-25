@@ -35,20 +35,19 @@ class PermisoController extends Controller
         ]);
 
         $data = $request->input('permisos', []);
-        $modulos = collect(config('permisos.categorias', []))->flatMap(fn ($grupo) => array_keys($grupo));
+        $modulos = collect(config('permisos.categorias', []))->flatMap(fn ($grupo) => $grupo);
 
-        foreach ($modulos as $modulo) {
+        foreach ($modulos as $modulo => $meta) {
             $valores = $data[$modulo] ?? [];
+            $permisos = [];
+            foreach (array_keys(config('permisos.acciones', [])) as $accion) {
+                $permisos[$accion] = in_array($accion, $meta['acciones'], true)
+                    && ! empty($valores[$accion]);
+            }
 
             $role->permisos()->updateOrCreate(
                 ['modulo' => $modulo],
-                [
-                    'ver' => ! empty($valores['ver']),
-                    'crear' => ! empty($valores['crear']),
-                    'editar' => ! empty($valores['editar']),
-                    'eliminar' => ! empty($valores['eliminar']),
-                    'buscar' => ! empty($valores['buscar']),
-                ]
+                $permisos
             );
         }
 

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Cargo;
-use App\Models\CategoriaFinanciera;
 use App\Models\Ingreso;
 use App\Models\LiderIglesia;
 use App\Models\Role;
@@ -61,7 +60,6 @@ class EgresoRegistrarTransaccionalTest extends TestCase
         return array_merge([
             'id_contrato' => null,
             'id_lider_iglesia' => null,
-            'categoria_id' => $this->categoria('Salarios'),
             'tipo_egreso' => 'Salarios',
             'monto' => 500,
             'fecha' => now()->toDateString(),
@@ -69,14 +67,6 @@ class EgresoRegistrarTransaccionalTest extends TestCase
             'responsable' => self::RESPONSABLE,
             'comprobante' => 'REC-001',
         ], $override);
-    }
-
-    private function categoria(string $nombre): ?int
-    {
-        return CategoriaFinanciera::query()
-            ->where('nombre', $nombre)
-            ->where('naturaleza', CategoriaFinanciera::NATURALEZA_EGRESO)
-            ->value('id');
     }
 
     public function test_cp1_registra_egreso_con_categoria_seleccionada(): void
@@ -90,7 +80,6 @@ class EgresoRegistrarTransaccionalTest extends TestCase
             'tipo_egreso' => 'Salarios',
             'monto' => 500,
             'responsable' => self::RESPONSABLE,
-            'categoria_id' => $this->categoria('Salarios'),
         ]);
     }
 
@@ -103,12 +92,11 @@ class EgresoRegistrarTransaccionalTest extends TestCase
         $this->assertDatabaseCount('egresos', 0);
     }
 
-    public function test_cp3_asigna_categoria_automaticamente_sin_seleccion(): void
+    public function test_cp3_registra_el_tipo_de_egreso_sin_catalogo(): void
     {
         $this->actingAs($this->admin)
             ->post(route('egresos.store'), $this->datos([
                 'tipo_egreso' => 'Servicios Básicos',
-                'categoria_id' => null,
                 'monto' => 300,
             ]))
             ->assertRedirect(route('egresos.index'))
@@ -117,7 +105,6 @@ class EgresoRegistrarTransaccionalTest extends TestCase
         $this->assertDatabaseHas('egresos', [
             'tipo_egreso' => 'Servicios Básicos',
             'monto' => 300,
-            'categoria_id' => $this->categoria('Servicios Básicos'),
         ]);
     }
 

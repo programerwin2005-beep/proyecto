@@ -39,15 +39,11 @@ class ReporteController extends Controller
         $estado = $filtros['estado'] ?? '';
         $desde = $filtros['desde'] ?? '';
         $hasta = $filtros['hasta'] ?? '';
-        $hoy = today()->toDateString();
-        $ministeriosVigentes = fn ($q) => $q
-            ->where('miembro_ministerio.fecha_inicio', '<=', $hoy)
-            ->where(fn ($fechas) => $fechas->whereNull('miembro_ministerio.fecha_fin')->orWhere('miembro_ministerio.fecha_fin', '>=', $hoy));
 
         $query = Miembro::with([
             'cursos',
             'contratos',
-            'ministerios' => $ministeriosVigentes,
+            'ministerio',
         ])
             ->when($filtros['q'] ?? null, function ($q, $texto) {
                 $q->where(fn ($busqueda) => $busqueda->where('nombre', 'like', '%'.trim($texto).'%')
@@ -57,9 +53,9 @@ class ReporteController extends Controller
             ->when($filtros['curso_id'] ?? null, fn ($q, $id) => $q->whereHas('cursos', fn ($curso) => $curso->whereKey($id)))
             ->when(($filtros['contratos'] ?? '') === 'con', fn ($q) => $q->has('contratos'))
             ->when(($filtros['contratos'] ?? '') === 'sin', fn ($q) => $q->doesntHave('contratos'))
-            ->when(($filtros['ministerios'] ?? '') === 'con', fn ($q) => $q->whereHas('ministerios', $ministeriosVigentes))
-            ->when(($filtros['ministerios'] ?? '') === 'sin', fn ($q) => $q->whereDoesntHave('ministerios', $ministeriosVigentes))
-            ->when($filtros['ministerio_id'] ?? null, fn ($q, $id) => $q->whereHas('ministerios', fn ($m) => $ministeriosVigentes($m)->where('ministerios.id', $id)));
+            ->when(($filtros['ministerios'] ?? '') === 'con', fn ($q) => $q->whereHas('ministerio'))
+            ->when(($filtros['ministerios'] ?? '') === 'sin', fn ($q) => $q->whereDoesntHave('ministerio'))
+            ->when($filtros['ministerio_id'] ?? null, fn ($q, $id) => $q->whereHas('ministerio', fn ($m) => $m->whereKey($id)));
 
         if ($estado !== '') {
             $query->where('estado', $estado);

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\IngresoRequest;
 use App\Enums\TipoIngreso;
 use App\Models\Actividad;
-use App\Models\CategoriaFinanciera;
 use App\Models\Culto;
 use App\Models\Egreso;
 use App\Models\Ingreso;
@@ -56,7 +55,7 @@ class IngresoController extends Controller
 
     public function storeActividad(IngresoRequest $request)
     {
-        $datos = $this->conCategoria($request->validated());
+        $datos = $request->validated();
         $datos['tipo'] = TipoIngreso::Actividad->value;
         // El ingreso de actividad no se asocia a un culto.
         $datos['id_culto'] = null;
@@ -69,7 +68,7 @@ class IngresoController extends Controller
 
     public function store(IngresoRequest $request)
     {
-        $datos = $this->conCategoria($request->validated());
+        $datos = $request->validated();
         // El ingreso general no se asocia a actividades: existe el flujo
         // separado "Ingreso Actividad" para ese caso.
         $datos['id_actividad'] = null;
@@ -112,31 +111,13 @@ class IngresoController extends Controller
                 ->with('error', 'Este ingreso proviene de un pago de curso; modifícalo desde el módulo de Pagos.');
         }
 
-        $datos = $this->conCategoria($request->validated());
+        $datos = $request->validated();
         // La fecha original no se modifica.
         $datos['fecha'] = $ingreso->fecha;
 
         $ingreso->update($datos);
 
         return redirect()->route('ingresos.index')->with('success', 'Ingreso actualizado con éxito.');
-    }
-
-    /**
-     * Completa `categoria_id` a partir del tipo cuando el formulario no lo envía.
-     *
-     * @param  array<string, mixed>  $datos
-     * @return array<string, mixed>
-     */
-    private function conCategoria(array $datos): array
-    {
-        if (empty($datos['categoria_id']) && ! empty($datos['tipo'])) {
-            $datos['categoria_id'] = CategoriaFinanciera::idPara(
-                $datos['tipo'],
-                CategoriaFinanciera::NATURALEZA_INGRESO
-            );
-        }
-
-        return $datos;
     }
 
     public function destroy($id)

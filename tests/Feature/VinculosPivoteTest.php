@@ -6,7 +6,6 @@ use App\Models\Asistencia;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\Miembro;
-use App\Models\Ministerio;
 use App\Models\Role;
 use App\Models\Sesion;
 use App\Models\User;
@@ -45,37 +44,6 @@ class VinculosPivoteTest extends TestCase
 
         $this->assertTrue($usuario->fresh()->hasRole('Secretario'));
         $this->assertSame(1, DB::table('role_user')->where('user_id', $usuario->id)->count());
-    }
-
-    public function test_miembro_ministerio_desvinculado_no_se_devuelve_y_se_reactiva(): void
-    {
-        $miembro = $this->crearMiembro('Miembro de Ministerio');
-        $ministerio = Ministerio::create(['nombre' => 'Alabanza']);
-        $datos = [
-            'fecha_inicio' => now()->toDateString(),
-        ];
-
-        VinculoPivote::adjuntar($ministerio->miembros(), $miembro->id, $datos);
-
-        $this->assertCount(1, $ministerio->fresh()->miembros);
-        $this->assertCount(1, $miembro->fresh()->ministerios);
-
-        VinculoPivote::desvincular($ministerio->miembros(), $miembro->id);
-
-        $this->assertCount(0, $ministerio->fresh()->miembros);
-        $this->assertCount(0, $miembro->fresh()->ministerios);
-        $this->assertSoftDeleted('miembro_ministerio', [
-            'miembro_id' => $miembro->id,
-            'ministerio_id' => $ministerio->id,
-        ]);
-
-        VinculoPivote::adjuntar($ministerio->miembros(), $miembro->id, $datos);
-
-        $this->assertCount(1, $ministerio->fresh()->miembros);
-        $this->assertSame(
-            1,
-            DB::table('miembro_ministerio')->where('miembro_id', $miembro->id)->count()
-        );
     }
 
     public function test_sincronizar_desactiva_y_reactiva_sin_filas_huerfanas(): void

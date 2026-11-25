@@ -54,8 +54,5 @@ class DatabaseSeeder extends Seeder
 
         // Permisos por rol (idempotente).
         $this->call(PermisosPorRolSeeder::class);
-
-        // Catálogo financiero normalizado (idempotente).
-        $this->call(CategoriasFinancierasSeeder::class);
     }
 }

@@ -28,7 +28,6 @@ class EgresoRequest extends FormRequest
                 },
             ],
             'id_lider_iglesia' => 'nullable|exists:lideres_iglesia,id',
-            'categoria_id' => 'nullable|exists:categorias_financieras,id',
             'tipo_egreso' => ['required', Rule::enum(TipoEgreso::class)],
             'monto' => 'required|numeric|min:0',
             'fecha' => 'required|date',

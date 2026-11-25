@@ -21,7 +21,6 @@ class IngresoRequest extends FormRequest
                 ? 'required|exists:actividades,id'
                 : 'nullable|exists:actividades,id',
             'id_culto' => 'nullable|exists:cultos,id',
-            'categoria_id' => 'nullable|exists:categorias_financieras,id',
             'monto_total' => 'required|numeric|min:0',
             'fecha' => 'required|date',
             'tipo' => ['required', Rule::enum(TipoIngreso::class)],

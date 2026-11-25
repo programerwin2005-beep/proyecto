@@ -50,7 +50,7 @@
             <div style="color: var(--text-secondary); font-size: 14px;"><b>Tema:</b> {{ $sesion->tema }}</div>
         </div>
 
-        @if(auth()->user()->puede('asistencia', 'crear'))
+        @if(auth()->user()->puede('asistencia', 'marcar_todos'))
         <form method="POST" action="{{ route('asistencia.marcarTodos', $sesion->id) }}" style="display: inline;" onsubmit="return confirm('¿Marcar a todos los inscritos como presentes?');">
             @csrf
             <button type="submit" class="btn" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">✓ Marcar Todos Presentes</button>

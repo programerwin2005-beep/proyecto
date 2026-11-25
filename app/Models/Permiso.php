@@ -17,6 +17,15 @@ class Permiso extends Model
         'editar',
         'eliminar',
         'buscar',
+        'asignar_roles',
+        'gestionar_acceso',
+        'generar_sesiones',
+        'marcar_todos',
+        'ver_historial',
+        'completar',
+        'renovar',
+        'pagar_contrato',
+        'ingreso_actividad',
     ];
 
     protected function casts(): array
@@ -27,6 +36,15 @@ class Permiso extends Model
             'editar' => 'boolean',
             'eliminar' => 'boolean',
             'buscar' => 'boolean',
+            'asignar_roles' => 'boolean',
+            'gestionar_acceso' => 'boolean',
+            'generar_sesiones' => 'boolean',
+            'marcar_todos' => 'boolean',
+            'ver_historial' => 'boolean',
+            'completar' => 'boolean',
+            'renovar' => 'boolean',
+            'pagar_contrato' => 'boolean',
+            'ingreso_actividad' => 'boolean',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EstadoSeguimiento;
 use App\Models\Actividad;
 use App\Models\SeguimientoActividad;
+use App\Rules\ResponsableDeActividad;
 use App\Rules\SoloLetras;
 use App\Services\ActividadTareasService;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class SeguimientoActividadController extends Controller
 
     public function create()
     {
-        $actividades = Actividad::all();
+        $actividades = Actividad::with(['ministerio.lider', 'ministerio.miembros'])->get();
 
         return view('seguimiento.create', compact('actividades'));
     }
@@ -46,7 +47,10 @@ class SeguimientoActividadController extends Controller
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
-            'responsable' => ['required', 'string', 'max:255', new SoloLetras],
+            'responsable' => [
+                'required', 'string', 'max:255', new SoloLetras,
+                new ResponsableDeActividad($request->integer('id_actividad')),
+            ],
             'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
@@ -65,23 +69,32 @@ class SeguimientoActividadController extends Controller
     public function edit($id)
     {
         $seguimiento = SeguimientoActividad::findOrFail($id);
-        $actividades = Actividad::all();
+        $actividades = Actividad::with(['ministerio.lider', 'ministerio.miembros'])->get();
 
         return view('seguimiento.edit', compact('seguimiento', 'actividades'));
     }
 
     public function update(Request $request, $id)
     {
+        $seguimiento = SeguimientoActividad::findOrFail($id);
+        $mismaActividad = $request->integer('id_actividad') === (int) $seguimiento->id_actividad;
+
         $validated = $request->validate([
             'nombre_tarea' => 'required|string|max:255',
             'id_actividad' => 'required|exists:actividades,id',
             'fecha_registro' => 'required|date',
             'observacion' => 'nullable|string',
-            'responsable' => ['required', 'string', 'max:255', new SoloLetras],
+            'responsable' => [
+                'required', 'string', 'max:255', new SoloLetras,
+                new ResponsableDeActividad(
+                    $request->integer('id_actividad'),
+                    $mismaActividad ? $seguimiento->responsable : null,
+                ),
+            ],
             'estado' => ['required', Rule::enum(EstadoSeguimiento::class)],
         ]);
 
-        app(ActividadTareasService::class)->guardarTarea($validated, (int) $id);
+        app(ActividadTareasService::class)->guardarTarea($validated, (int) $seguimiento->id);
 
         return redirect()->route('seguimiento.index')->with('success', 'Seguimiento actualizado con éxito.');
     }

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -28,12 +27,12 @@ class Ministerio extends Model
         return $this->belongsTo(LiderIglesia::class, 'id_lider_iglesia');
     }
 
-    public function miembros(): BelongsToMany
+    /**
+     * Miembros que pertenecen al ministerio (cada miembro tiene uno solo).
+     */
+    public function miembros(): HasMany
     {
-        return $this->belongsToMany(Miembro::class, 'miembro_ministerio')
-            ->withPivot(['fecha_inicio', 'fecha_fin', 'deleted_at'])
-            ->withTimestamps()
-            ->wherePivotNull('deleted_at');
+        return $this->hasMany(Miembro::class, 'id_ministerio');
     }
 
     public function actividades(): HasMany

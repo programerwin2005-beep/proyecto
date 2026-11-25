@@ -39,8 +39,8 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Fecha de Inicio</th>
-                    <th>Fecha de Fin</th>
+                    <th>Estado</th>
+                    <th>Correo</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,8 +48,8 @@
 
                     <tr>
                         <td>{{ $miembro->nombre }}</td>
-                        <td>{{ \Carbon\Carbon::parse($miembro->pivot->fecha_inicio)->format('d/m/Y') }}</td>
-                        <td>{{ $miembro->pivot->fecha_fin ? \Carbon\Carbon::parse($miembro->pivot->fecha_fin)->format('d/m/Y') : 'Actualidad' }}</td>
+                        <td>{{ $miembro->estado?->value ?? '—' }}</td>
+                        <td>{{ $miembro->email ?: '—' }}</td>
                     </tr>
                 @empty
                     <tr>

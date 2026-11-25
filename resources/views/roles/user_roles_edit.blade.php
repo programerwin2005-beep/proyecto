@@ -43,7 +43,7 @@
         </div>
     @endif
 
-    @if(auth()->user()->puede('roles', 'editar'))
+    @if(auth()->user()->puede('roles', 'asignar_roles'))
     <form method="POST" action="{{ route('roles.user.save') }}" class="js-assign-roles-form">
         @csrf
         <input type="hidden" name="user_id" value="{{ $user->id }}">
